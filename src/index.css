@@ -6,39 +6,48 @@
 
 :root {
   --font-geist-sans: 'Geist Sans', ui-sans-serif, system-ui, sans-serif;
-  --accent: #5b21b6;
-  --accent-hover: #4c1d95;
-  --accent-soft: #ede9fe;
-  --tide: #0f766e;
+  /* Supplied pastels: blush, pink, petal, lilac, and deep lilac. */
+  --blush: #fcd6f9;
+  --blush-2: #ffc6fe;
+  --petal: #f6b2ff;
+  --lilac: #ceafff;
+  --lilac-deep: #c19bff;
+  /* Dusty plum from the same family, dark enough for white label text. */
+  --accent: #4c356f;
+  --accent-hover: #3d295c;
+  --accent-soft: #f6b2ff;
+  /* Muted aqua complement. */
+  --tide: #0c6e69;
 }
 
-/* Aqua paper, teal ink, purple actions. Text tokens stay dark enough for AA on the light surfaces. */
+/* Soft pink and lavender surfaces, plum text, aqua for progress and status. */
 [data-theme='light'] {
-  --page: #e7f6f5;
-  --frame: #f3fbfb;
+  --page: #fdf6fc;
+  --frame: #fcd6f9;
   --raised: #ffffff;
-  --hover: #dff3f1;
-  --line: #c5e4e1;
-  --line-2: #8fc9c3;
-  --fg: #072f36;
-  --fg-2: #164851;
-  --fg-3: #2c5d66;
-  --fg-4: #4a727a;
-  --info: #0f766e;
-  --info-soft: #d5f3ef;
-  --success: #0f766e;
-  --success-soft: #d5f3ef;
-  --warning: #92400e;
+  --hover: #ffc6fe;
+  --line: #c19bff;
+  --line-2: #9272c5;
+  --fg: #2a1838;
+  --fg-2: #3c2852;
+  --fg-3: #513968;
+  --fg-4: #64507a;
+  --info: #0c6e69;
+  --info-soft: #d7f4f1;
+  --success: #0c6e69;
+  --success-soft: #d7f4f1;
+  --warning: #8a4b08;
   --warning-soft: #ffedd5;
   --danger: #9f1239;
-  --danger-soft: #ffe4e6;
-  --shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset, 0 12px 32px -16px rgba(15, 80, 90, 0.28);
-  --overlay: rgba(7, 47, 54, 0.36);
+  --danger-soft: #fde2ea;
+  --shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset, 0 14px 32px -18px rgba(76, 53, 111, 0.28);
+  --overlay: rgba(42, 24, 56, 0.4);
 }
 
 html[data-theme='light'] body {
   background:
-    radial-gradient(980px 420px at 100% -8%, rgba(91, 33, 182, 0.14), transparent 52%),
-    radial-gradient(820px 460px at -12% -18%, rgba(15, 118, 110, 0.2), transparent 56%),
+    radial-gradient(920px 440px at 108% -12%, rgba(246, 178, 255, 0.55), transparent 58%),
+    radial-gradient(760px 420px at -12% -8%, rgba(12, 110, 105, 0.14), transparent 54%),
+    radial-gradient(680px 360px at 72% 108%, rgba(255, 198, 254, 0.65), transparent 52%),
     var(--page);
 }
