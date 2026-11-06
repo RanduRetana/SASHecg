@@ -1,0 +1,65 @@
+import { PDFDocument, rgb, StandardFonts, type PDFPage } from 'pdf-lib'
+
+const PHI = 'PACIENTE FICTICIO'
+const SAFE = 'RITMO DE EJEMPLO'
+
+/** Three letter pages of an obviously fake ECG, for trying the tool without a real report. */
+export async function createSamplePdf(): Promise<Uint8Array> {
+  const doc = await PDFDocument.create()
+  doc.setTitle('Documento sintético SASHecg')
+  doc.setAuthor('SASHecg')
+  doc.setSubject('SIN DATOS REALES')
+  const font = await doc.embedFont(StandardFonts.Helvetica)
+  const bold = await doc.embedFont(StandardFonts.HelveticaBold)
+
+  for (let index = 0; index < 3; index++) {
+    const page = doc.addPage([612, 792])
+    page.drawRectangle({ x: 0, y: 0, width: 612, height: 792, color: rgb(1, 1, 1) })
+    page.drawRectangle({ x: 0, y: 748, width: 612, height: 44, color: rgb(0.93, 0.96, 0.95) })
+    page.drawText('SASHecg', { x: 470, y: 764, size: 14, font: bold, color: rgb(0.11, 0.42, 0.38) })
+    page.drawText('DOCUMENTO SINTÉTICO', { x: 430, y: 752, size: 8, font, color: rgb(0.35, 0.4, 0.39) })
+
+    page.drawText(PHI, { x: 28, y: 766, size: 13, font: bold, color: rgb(0.08, 0.09, 0.09) })
+    page.drawText(`ID DEMO-000${index + 1}`, { x: 28, y: 750, size: 10, font, color: rgb(0.15, 0.16, 0.16) })
+    page.drawText('SALA FICTICIA', { x: 28, y: 736, size: 9, font, color: rgb(0.2, 0.22, 0.22) })
+
+    page.drawText(SAFE, { x: 250, y: 766, size: 11, font: bold, color: rgb(0.1, 0.28, 0.26) })
+    page.drawText(`Página ${index + 1} de 3`, { x: 250, y: 750, size: 9, font, color: rgb(0.3, 0.34, 0.33) })
+
+    drawGrid(page)
+    drawWave(page, 96 + index * 18)
+    page.drawText('SIN DATOS REALES — este trazado es un dibujo, no un electrocardiograma.', {
+      x: 36,
+      y: 48,
+      size: 9,
+      font,
+      color: rgb(0.35, 0.25, 0.25),
+    })
+  }
+
+  return new Uint8Array(await doc.save())
+}
+
+function drawGrid(page: PDFPage) {
+  const line = rgb(0.9, 0.72, 0.72)
+  for (let x = 36; x <= 576; x += 12) {
+    page.drawLine({ start: { x, y: 80 }, end: { x, y: 700 }, thickness: 0.3, color: line })
+  }
+  for (let y = 80; y <= 700; y += 12) {
+    page.drawLine({ start: { x: 36, y }, end: { x: 576, y }, thickness: 0.3, color: line })
+  }
+}
+
+function drawWave(page: PDFPage, baseline: number) {
+  const ink = rgb(0.08, 0.38, 0.34)
+  let x = 48
+  while (x < 560) {
+    const next = x + 26
+    page.drawLine({ start: { x, y: baseline }, end: { x: x + 8, y: baseline }, thickness: 1.3, color: ink })
+    page.drawLine({ start: { x: x + 8, y: baseline }, end: { x: x + 12, y: baseline + 8 }, thickness: 1.3, color: ink })
+    page.drawLine({ start: { x: x + 12, y: baseline + 8 }, end: { x: x + 15, y: baseline - 22 }, thickness: 1.4, color: ink })
+    page.drawLine({ start: { x: x + 15, y: baseline - 22 }, end: { x: x + 19, y: baseline + 16 }, thickness: 1.4, color: ink })
+    page.drawLine({ start: { x: x + 19, y: baseline + 16 }, end: { x: next, y: baseline }, thickness: 1.3, color: ink })
+    x = next
+  }
+}

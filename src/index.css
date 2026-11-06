@@ -1,0 +1,17 @@
+@import 'tailwindcss';
+@import '@fontsource/geist-sans/400.css';
+@import '@fontsource/geist-sans/500.css';
+@import '@fontsource/geist-sans/600.css';
+@import './styles/stealth.css';
+
+:root {
+  --font-geist-sans: 'Geist Sans', ui-sans-serif, system-ui, sans-serif;
+}
+
+/* A cooler paper tone on top of Stealth UI's light theme, for a quiet clinical page. */
+[data-theme='light'] {
+  --page: #eef3f1;
+  --frame: #f7fbf9;
+  --info: #1d6b62;
+  --info-soft: rgba(29, 107, 98, 0.1);
+}
