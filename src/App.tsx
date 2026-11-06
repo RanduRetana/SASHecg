@@ -36,7 +36,7 @@ export default function App() {
 
           <Stepper value={stage} onValueChange={session.goTo} linear={false} aria-label="Anonymization steps">
             <StepperStep title="Upload" description="One PDF" />
-            <StepperStep title="Define area" description="Upper left" disabled={session.maxStage < 1} />
+            <StepperStep title="Define area" description="Rectangles" disabled={session.maxStage < 1} />
             <StepperStep title="Review" description="Thumbnails" disabled={session.maxStage < 2} />
             <StepperStep title="Export" description="One ZIP" disabled={session.maxStage < 3} />
           </Stepper>
@@ -50,7 +50,7 @@ export default function App() {
         </div>
 
         <footer className="mx-auto max-w-6xl px-4 pb-8 text-[12px] text-fg-3">
-          SASHecg covers only the rectangle you mark. It does not look for other details that remain visible on the page.
+          SASHecg covers only the rectangles you mark. It does not look for other details that remain visible on the page.
         </footer>
 
         <div className="sr-only" aria-live="polite">

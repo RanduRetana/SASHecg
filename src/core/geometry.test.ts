@@ -3,9 +3,14 @@ import {
   applyHandle,
   clampRect,
   normalizedToPixels,
+  placeNewRect,
   pointerToNormalized,
-  rectForPage,
   rectsEqual,
+  rectsForPage,
+  rectsOverlap,
+  sameRectList,
+  withNewRect,
+  withoutRect,
   DEFAULT_REDACTION,
 } from './geometry'
 
@@ -63,11 +68,53 @@ test('dragging and resizing stay inside the edges', () => {
   expect(flipped.y).toBeGreaterThanOrEqual(0)
 })
 
-test('an exception replaces the shared area only on that page', () => {
-  const shared = rectForPage(0, DEFAULT_REDACTION, { 2: { x: 0.4, y: 0.4, width: 0.2, height: 0.2 } })
-  const custom = rectForPage(2, DEFAULT_REDACTION, { 2: { x: 0.4, y: 0.4, width: 0.2, height: 0.2 } })
+test('an exception replaces the shared set only on that page', () => {
+  const sharedSet = [DEFAULT_REDACTION, { x: 0.7, y: 0, width: 0.22, height: 0.12 }]
+  const customSet = [
+    { x: 0.4, y: 0.4, width: 0.2, height: 0.2 },
+    { x: 0.1, y: 0.7, width: 0.2, height: 0.15 },
+  ]
+  const shared = rectsForPage(0, sharedSet, { 2: customSet })
+  const custom = rectsForPage(2, sharedSet, { 2: customSet })
+  const empty = rectsForPage(1, sharedSet, { 1: [] })
   expect(shared.exception).toBe(false)
-  expect(rectsEqual(shared.rect, DEFAULT_REDACTION)).toBe(true)
+  expect(sameRectList(shared.rects, sharedSet)).toBe(true)
   expect(custom.exception).toBe(true)
-  expect(custom.rect).toEqual({ x: 0.4, y: 0.4, width: 0.2, height: 0.2 })
+  expect(custom.rects).toEqual(customSet)
+  expect(empty.exception).toBe(false)
+  expect(sameRectList(empty.rects, sharedSet)).toBe(true)
+})
+
+test('new areas land clear of the ones already placed, and the last area cannot be deleted', () => {
+  const first = withNewRect([DEFAULT_REDACTION])
+  expect(first.selected).toBe(1)
+  expect(first.rects).toHaveLength(2)
+  expect(rectsOverlap(first.rects[0]!, first.rects[1]!)).toBe(false)
+  expect(first.rects[1]!.x).toBeGreaterThanOrEqual(0)
+  expect(first.rects[1]!.y).toBeGreaterThanOrEqual(0)
+  expect(first.rects[1]!.x + first.rects[1]!.width).toBeLessThanOrEqual(1)
+  expect(first.rects[1]!.y + first.rects[1]!.height).toBeLessThanOrEqual(1)
+
+  const second = withNewRect(first.rects)
+  expect(second.rects).toHaveLength(3)
+  expect(rectsOverlap(second.rects[0]!, second.rects[2]!)).toBe(false)
+  expect(rectsOverlap(second.rects[1]!, second.rects[2]!)).toBe(false)
+
+  const crowded = placeNewRect(
+    Array.from({ length: 40 }, (_, index) => ({
+      x: (index % 5) * 0.2,
+      y: Math.floor(index / 5) * 0.16,
+      width: 0.2,
+      height: 0.16,
+    })),
+  )
+  expect(crowded.x).toBeGreaterThanOrEqual(0)
+  expect(crowded.y).toBeGreaterThanOrEqual(0)
+  expect(crowded.width).toBeGreaterThanOrEqual(0.02)
+
+  expect(withoutRect([DEFAULT_REDACTION], 0)).toBe(null)
+  const removed = withoutRect(second.rects, 1)
+  expect(removed?.rects).toHaveLength(2)
+  expect(removed?.selected).toBe(1)
+  expect(sameRectList(removed?.rects ?? [], [second.rects[0]!, second.rects[2]!])).toBe(true)
 })

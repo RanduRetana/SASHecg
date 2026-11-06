@@ -28,7 +28,7 @@ test('many small PDFs share one rectangle and keep distinct source names', async
       pages: [{ localIndex: 0, globalIndex: index, filename: plan[index]!.names[0]! }],
     })),
     {
-      defaultRect: { x: 0, y: 0, width: 0.45, height: 0.35 },
+      defaultRects: [{ x: 0, y: 0, width: 0.45, height: 0.35 }],
       targetDpi: 72,
       previews: false,
       canvasFactory,
@@ -58,6 +58,60 @@ test('many small PDFs share one rectangle and keep distinct source names', async
     await opened.destroy()
   }
 }, 60000)
+
+test('shared areas and a per-file exception are burned on every document', async () => {
+  const inputs = [await twoZonePdf(), await twoZonePdf()]
+  const left = { x: 0, y: 0, width: 0.42, height: 0.34 }
+  const right = { x: 0.55, y: 0, width: 0.4, height: 0.34 }
+  const result = await anonymizeBatch(
+    inputs.map((data, index) => ({
+      load: async () => data,
+      pages: [{ localIndex: 0, globalIndex: index, filename: `ward-ecg-00${index + 1}.pdf` }],
+    })),
+    {
+      defaultRects: [left, right],
+      overrides: { 1: [right] },
+      targetDpi: 72,
+      previews: false,
+      canvasFactory,
+    },
+  )
+  expect(result.failures).toEqual([])
+  expect(result.pages.map((page) => page.exception)).toEqual([false, true])
+  expect(result.pages[0]?.rects).toEqual([left, right])
+  expect(result.pages[1]?.rects).toEqual([right])
+
+  const shared = await openPdf(result.pages[0]!.pdfBytes)
+  const custom = await openPdf(result.pages[1]!.pdfBytes)
+  for (const [opened, expectLeftMask] of [
+    [shared, true],
+    [custom, false],
+  ] as const) {
+    const page = await opened.pdf.getPage(1)
+    const viewport = page.getViewport({ scale: 1 })
+    const canvas = createCanvas(Math.ceil(viewport.width), Math.ceil(viewport.height))
+    await page.render({ canvas: canvas as unknown as HTMLCanvasElement, viewport }).promise
+    const ctx = canvas.getContext('2d')
+    const leftPixel = ctx.getImageData(12, 12, 1, 1).data
+    const rightPixel = ctx.getImageData(150, 12, 1, 1).data
+    const kept = ctx.getImageData(100, 90, 1, 1).data
+    expect([rightPixel[0], rightPixel[1], rightPixel[2], rightPixel[3]]).toEqual([17, 17, 17, 255])
+    if (expectLeftMask) expect([leftPixel[0], leftPixel[1], leftPixel[2], leftPixel[3]]).toEqual([17, 17, 17, 255])
+    else expect(leftPixel[0]).toBeGreaterThan(200)
+    expect(kept[2]).toBeGreaterThan(200)
+    page.cleanup()
+    await opened.destroy()
+  }
+})
+
+async function twoZonePdf() {
+  const doc = await PDFDocument.create()
+  const page = doc.addPage([240, 160])
+  page.drawRectangle({ x: 0, y: 112, width: 90, height: 48, color: rgb(1, 0, 0) })
+  page.drawRectangle({ x: 145, y: 112, width: 90, height: 48, color: rgb(0, 0.45, 0) })
+  page.drawRectangle({ x: 96, y: 50, width: 40, height: 40, color: rgb(0, 0.2, 1) })
+  return new Uint8Array(await doc.save())
+}
 
 async function markedPdf(size: [number, number]) {
   const doc = await PDFDocument.create()

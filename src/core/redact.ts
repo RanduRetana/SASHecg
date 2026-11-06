@@ -61,3 +61,14 @@ export function burnRedaction(
   ctx.fillRect(area.x, area.y, area.width, area.height)
   ctx.restore()
 }
+
+/** Paint every area. Later rectangles cover earlier ones where they overlap. */
+export function burnRedactions(
+  ctx: PaintContext,
+  width: number,
+  height: number,
+  rects: readonly NormalizedRect[],
+  color: { r: number; g: number; b: number } = MASK_COLOR,
+): void {
+  for (const rect of rects) burnRedaction(ctx, width, height, rect, color)
+}

@@ -159,14 +159,94 @@ export function applyHandle(rect: NormalizedRect, handle: Handle, dx: number, dy
   })
 }
 
-export function rectForPage(
+export function rectsOverlap(a: NormalizedRect, b: NormalizedRect, epsilon = 0.004): boolean {
+  return (
+    a.x < b.x + b.width - epsilon &&
+    a.x + a.width > b.x + epsilon &&
+    a.y < b.y + b.height - epsilon &&
+    a.y + a.height > b.y + epsilon
+  )
+}
+
+const NEW_RECT_WIDTH = 0.22
+const NEW_RECT_HEIGHT = 0.12
+
+/**
+ * A new area that sits clear of the ones already on the page, still inside
+ * the edges. Later areas step down the page if the first gaps are taken.
+ */
+export function placeNewRect(existing: readonly NormalizedRect[]): NormalizedRect {
+  const placed = existing.map(clampRect)
+  const candidates: NormalizedRect[] = []
+  const seeds: Array<[number, number]> = [
+    [0.34, 0],
+    [0, 0.2],
+    [0.56, 0],
+    [0.34, 0.2],
+    [0.56, 0.2],
+    [0.78, 0],
+    [0, 0.4],
+    [0.28, 0.4],
+    [0.56, 0.4],
+    [0, 0.62],
+    [0.34, 0.62],
+    [0.62, 0.62],
+  ]
+  for (const [x, y] of seeds) {
+    candidates.push(clampRect({ x, y, width: NEW_RECT_WIDTH, height: NEW_RECT_HEIGHT }))
+  }
+  for (let row = 0; row < 7; row++) {
+    for (let column = 0; column < 4; column++) {
+      candidates.push(clampRect({ x: column * 0.25, y: row * 0.14, width: NEW_RECT_WIDTH, height: NEW_RECT_HEIGHT }))
+    }
+  }
+  for (const candidate of candidates) {
+    if (!placed.some((other) => rectsOverlap(candidate, other))) return candidate
+  }
+  const last = placed[placed.length - 1] ?? DEFAULT_REDACTION
+  return clampRect({ x: last.x + 0.05, y: last.y + 0.05, width: NEW_RECT_WIDTH, height: NEW_RECT_HEIGHT })
+}
+
+export function sameRectList(a: readonly NormalizedRect[], b: readonly NormalizedRect[], epsilon = 0.0001): boolean {
+  if (a.length !== b.length) return false
+  return a.every((rect, index) => {
+    const other = b[index]
+    return other !== undefined && rectsEqual(rect, other, epsilon)
+  })
+}
+
+/** Shared areas for every page, unless that page stores its own full set. */
+export function rectsForPage(
   index: number,
-  fallback: NormalizedRect,
-  overrides?: Readonly<Record<number, NormalizedRect>>,
-): { rect: NormalizedRect; exception: boolean } {
+  fallback: readonly NormalizedRect[],
+  overrides?: Readonly<Record<number, readonly NormalizedRect[] | undefined>>,
+): { rects: NormalizedRect[]; exception: boolean } {
   const custom = overrides?.[index]
-  if (custom) return { rect: clampRect(custom), exception: true }
-  return { rect: clampRect(fallback), exception: false }
+  if (custom && custom.length > 0) return { rects: custom.map(clampRect), exception: true }
+  const shared = fallback.length > 0 ? fallback.map(clampRect) : [clampRect(DEFAULT_REDACTION)]
+  return { rects: shared, exception: false }
+}
+
+export function replaceRectAt(rects: readonly NormalizedRect[], index: number, next: NormalizedRect): NormalizedRect[] {
+  if (rects.length === 0) return [clampRect(next)]
+  const safeIndex = Math.min(Math.max(0, index), rects.length - 1)
+  return rects.map((rect, cursor) => clampRect(cursor === safeIndex ? next : rect))
+}
+
+export function withNewRect(rects: readonly NormalizedRect[]): { rects: NormalizedRect[]; selected: number } {
+  const current = rects.length > 0 ? rects.map(clampRect) : [clampRect(DEFAULT_REDACTION)]
+  return { rects: [...current, placeNewRect(current)], selected: current.length }
+}
+
+/** Returns null when the set would become empty. A page always keeps one area. */
+export function withoutRect(
+  rects: readonly NormalizedRect[],
+  index: number,
+): { rects: NormalizedRect[]; selected: number } | null {
+  if (rects.length <= 1) return null
+  const safeIndex = Math.min(Math.max(0, index), rects.length - 1)
+  const next = rects.filter((_, cursor) => cursor !== safeIndex).map(clampRect)
+  return { rects: next, selected: Math.min(safeIndex, next.length - 1) }
 }
 
 function clampPixel(value: number, limit: number): number {

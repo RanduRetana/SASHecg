@@ -1,7 +1,7 @@
 import { PDFDocument } from 'pdf-lib'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
 import type { NormalizedRect } from './geometry'
-import { burnRedaction } from './redact'
+import { burnRedactions } from './redact'
 import { chooseRenderScale } from './scale'
 
 export type CanvasFactory = (width: number, height: number) => HTMLCanvasElement
@@ -39,7 +39,7 @@ export async function imageToSinglePagePdf(png: Uint8Array, widthPt: number, hei
 export async function flattenPage(options: {
   pdf: PDFDocumentProxy
   pageIndex: number
-  rect: NormalizedRect
+  rects: readonly NormalizedRect[]
   canvasFactory: CanvasFactory
   targetDpi?: number
   maxPixels?: number
@@ -82,7 +82,7 @@ export async function flattenPage(options: {
     }
     throwIfCancelled(options.signal)
 
-    burnRedaction(ctx, canvas.width, canvas.height, options.rect)
+    burnRedactions(ctx, canvas.width, canvas.height, options.rects)
     const png = await encodePng(canvas)
     const pdfBytes = await imageToSinglePagePdf(png, base.width, base.height)
     const previewBytes = options.previews === false ? null : await encodePreview(canvas, options.canvasFactory)
