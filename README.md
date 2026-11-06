@@ -34,7 +34,7 @@ bun test
 
 ## Workflow
 
-1. **Upload.** Choose one PDF or drop many. If a file is protected, the password is requested on the page. You can also create a three-page synthetic PDF, with no real data, to practice.
+1. **Upload.** Choose one PDF or drop many. If a file is protected, the password is requested on the page. You can also create a four-page synthetic PDF, with no real data, to practice.
 2. **Define area.** The starting rectangle covers the upper left (30% of the width and 15.5% of the height). Drag it, use the handles, or type X, Y, width, and height as fractions from 0 to 1. The origin is the top-left of the page as it is displayed. “All pages” applies the same fraction to every sheet. “Exception” stores a different area for the visible page or for the pages you selected.
 3. **Review.** Processing builds anonymized thumbnails. Select pages, adjust an exception, and reprocess only those. Shift-click selects a range.
 4. **Export.** Each page is named from its source file, for example `report-ecg-001.pdf`. One file downloads as `report-anonymized.zip`. Several files download together as `sash-ecg-anonymized.zip`. A second click does not start another download.
@@ -67,6 +67,22 @@ If a page at 220 dpi would exceed 8 megapixels, or the browser reports memory pr
 - An encrypted PDF needs its password. SASHecg cannot recover it.
 - Output PDFs are new documents and do not copy the source metadata.
 - The thumbnail grid shows the anonymized image, not the original file.
+
+## Direct links after deployment
+
+`/fishy-stew` is chosen in the browser. It is not a file in `dist/`. `bun run dev` and `bun run preview` are Vite SPA servers, so they return `index.html` for that path and the page still loads.
+
+A static host does not do that on its own. Opening `https://your-host/fishy-stew` asks for a file named `fishy-stew`. If the host has no fallback, it responds 404 before the app can read the path.
+
+`vercel.json` tells Vercel to rewrite any path that is not a real file to `/index.html`:
+
+```json
+{ "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }] }
+```
+
+Vercel checks the deployed files first, so `/assets/*`, `/fishy/fishy.gif`, and `/fishy/stew.gif` are still served as themselves. Only missing paths, including `/fishy-stew`, receive the app.
+
+On another static host, use the same rule: existing files stay files, and every other path returns `index.html`. Do not replace real assets with `index.html`.
 
 ## Copy the project to your Mac and GitHub
 
