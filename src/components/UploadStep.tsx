@@ -125,11 +125,11 @@ export function UploadStep({ session }: { session: Session }) {
 
       <div className="flex flex-col items-start gap-2 rounded-xl border border-dashed border-[var(--lilac-deep)] bg-[var(--blush)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="max-w-xl text-[12.5px] leading-relaxed text-fg-2">
-          Want to practice without a real report? The sample is three drawn pages, with a fictitious name in the corner
-          and a “no real data” line.
+          Want to practice with a realistic report? It is one synthetic page in the usual layout, with invented details
+          and no redaction bars.
         </p>
         <Button type="button" variant="secondary" loading={session.loading} onClick={() => void session.loadSample()}>
-          Create sample PDF
+          Create practice report
         </Button>
       </div>
     </section>
