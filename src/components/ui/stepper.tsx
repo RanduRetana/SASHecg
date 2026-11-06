@@ -245,7 +245,7 @@ function Indicator({ status, index, instant }: { status: StepStatus; index: numb
         "group-hover/step:border-fg-3 group-active/step:scale-[0.94]",
         status === "upcoming" && "border-line-2 bg-raised text-fg-3",
         (status === "current" || status === "loading") && "border-fg bg-raised text-fg ring-4 ring-fg/[0.07]",
-        status === "complete" && "border-[var(--tide)] bg-[var(--tide)] text-white group-hover/step:border-[var(--tide)] group-hover/step:bg-[var(--tide)]/85",
+        status === "complete" && "border-[var(--accent)] bg-[var(--accent)] text-white group-hover/step:border-[var(--accent)] group-hover/step:bg-[var(--accent)]/85",
         status === "error" && "border-danger/60 bg-danger-soft text-danger ring-4 ring-danger/[0.08] group-hover/step:border-danger",
         instant && "duration-0",
       )}
@@ -295,7 +295,7 @@ function Connector({ filled, vertical = false, hidden = false, instant }: { fill
       )}
     >
       <motion.span
-        className={cn("absolute inset-0 bg-[var(--tide)]", vertical ? "origin-top" : "origin-left")}
+        className={cn("absolute inset-0 bg-[var(--accent)]", vertical ? "origin-top" : "origin-left")}
         initial={false}
         animate={vertical ? { scaleY: filled ? 1 : 0 } : { scaleX: filled ? 1 : 0 }}
         transition={instant || reduce ? { duration: instant ? 0 : 0.15 } : { duration: filled ? 0.36 : 0.2, ease: ease.inOut, delay: filled ? 0.08 : 0 }}
