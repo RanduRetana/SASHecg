@@ -176,7 +176,7 @@ export function RedactionEditor({
         <canvas ref={canvasRef} className="block bg-white shadow-[var(--shadow)]" />
         {box && (
           <div
-            className="absolute touch-none border-2 border-[var(--accent)] bg-[var(--accent)]/25"
+            className="absolute touch-none border-2 border-[var(--accent)] bg-[var(--lilac-deep)]/45"
             style={{
               left: `${rect.x * 100}%`,
               top: `${rect.y * 100}%`,
