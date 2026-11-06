@@ -38,7 +38,7 @@ export function ReviewStep({ session }: { session: Session }) {
           <ProgressBar
             value={session.progress.total ? (session.progress.done / session.progress.total) * 100 : 0}
             label="Processing in this browser"
-            description={`${session.progress.done} of ${session.progress.total}`}
+            description={`${session.progress.done} of ${session.progress.total}${session.progress.label ? ` · ${session.progress.label}` : ''}`}
           />
           <Button type="button" variant="danger" onClick={() => session.cancel()}>
             Cancel
@@ -145,7 +145,7 @@ export function ReviewStep({ session }: { session: Session }) {
                       )}
                     </button>
                     <div className="mt-1 flex items-center justify-between gap-1 px-0.5">
-                      <span className="truncate text-[10.5px] text-fg-3">{slot?.filename ?? '—'}</span>
+                      <span className="truncate text-[10.5px] text-fg-3">{slot?.filename ?? info.outputName}</span>
                       {slot?.exception ? (
                         <Badge tone="warning" size="sm">
                           Exception

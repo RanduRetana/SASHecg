@@ -1,3 +1,7 @@
+declare const Bun: {
+  file(path: string): { arrayBuffer(): Promise<ArrayBuffer> }
+}
+
 declare module 'bun:test' {
   interface Matchers {
     toBe(expected: unknown): void

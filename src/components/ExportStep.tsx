@@ -17,8 +17,8 @@ export function ExportStep({ session }: { session: Session }) {
       <header className="grid gap-1">
         <h1 className="text-xl font-medium tracking-[-0.03em]">Download the ZIP</h1>
         <p className="text-[13.5px] leading-relaxed text-fg-2">
-          One PDF per page, with stable names: ecg-001.pdf, ecg-002.pdf, and so on. Each file is a flat image. Nothing
-          under the mask can be recovered.
+          One PDF per page, named from the source file: report-ecg-001.pdf. Each file is a flat image. Nothing under the
+          mask can be recovered.
         </p>
       </header>
 

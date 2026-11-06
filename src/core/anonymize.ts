@@ -27,6 +27,7 @@ export type ProcessProgress = {
   pageIndex: number
   dpi: number
   warning?: string
+  label?: string
 }
 
 export type AnonymizeResult = {
@@ -42,6 +43,10 @@ export async function anonymizeDocument(
     defaultRect: NormalizedRect
     overrides?: Readonly<Record<number, NormalizedRect>>
     indices?: number[]
+    /** Local page index to ZIP entry name. Defaults to ecg-001.pdf. */
+    filenames?: Readonly<Record<number, string>>
+    /** Local page index to the batch-wide page index stored on the result. */
+    globalIndexes?: Readonly<Record<number, number>>
     targetDpi?: number
     maxPixels?: number
     signal?: AbortSignal
@@ -77,12 +82,13 @@ export async function anonymizeDocument(
         previews: options.previews,
         signal: options.signal,
       })
+      const storedIndex = options.globalIndexes?.[index] ?? index
       const warning = flat.capped
-        ? `Page ${index + 1} was rasterized at ${Math.round(flat.dpi)} dpi to stay within memory. The usual target is 200–300 dpi.`
+        ? `Page ${storedIndex + 1} was rasterized at ${Math.round(flat.dpi)} dpi to stay within memory. The usual target is 200–300 dpi.`
         : undefined
       pages.push({
-        index,
-        filename: pageFileName(index + 1, options.pageCount),
+        index: storedIndex,
+        filename: options.filenames?.[index] ?? pageFileName(index + 1, options.pageCount),
         pdfBytes: flat.pdfBytes,
         previewBytes: flat.previewBytes,
         widthPt: flat.widthPt,
@@ -95,7 +101,7 @@ export async function anonymizeDocument(
       options.onProgress?.({
         done: cursor + 1,
         total: indices.length,
-        pageIndex: index,
+        pageIndex: storedIndex,
         dpi: flat.dpi,
         ...(warning ? { warning } : {}),
       })
@@ -103,14 +109,15 @@ export async function anonymizeDocument(
       if (error instanceof ProcessCancelled || options.signal?.aborted) {
         return { pages, failures, cancelled: true }
       }
+      const storedIndex = options.globalIndexes?.[index] ?? index
       failures.push({
-        index,
+        index: storedIndex,
         message: error instanceof Error ? error.message : 'Could not anonymize the page.',
       })
       options.onProgress?.({
         done: cursor + 1,
         total: indices.length,
-        pageIndex: index,
+        pageIndex: storedIndex,
         dpi: 0,
       })
     }

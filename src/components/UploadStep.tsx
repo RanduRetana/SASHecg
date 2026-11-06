@@ -11,7 +11,7 @@ const REJECTION: Record<string, string> = {
   type: 'Only PDF files are accepted.',
   size: 'The file is over this browser’s 512 MB limit.',
   empty: 'The file is empty.',
-  count: 'Drop one PDF at a time.',
+  count: 'Up to 1000 PDFs at a time.',
 }
 
 export function UploadStep({ session }: { session: Session }) {
@@ -22,24 +22,23 @@ export function UploadStep({ session }: { session: Session }) {
       <header className="grid gap-1">
         <h1 className="text-xl font-medium tracking-[-0.03em]">Upload a report</h1>
         <p className="max-w-2xl text-[13.5px] leading-relaxed text-fg-2">
-          Upload a multi-page PDF, set the redaction area once, review the pages, and download a ZIP of individual
-          anonymized PDFs.
+          Upload one multi-page PDF or many PDFs, set the redaction area once, review the pages, and download a ZIP of
+          individual anonymized PDFs.
         </p>
       </header>
 
       <Dropzone
         accept={['application/pdf', '.pdf']}
-        multiple={false}
-        maxFiles={1}
+        multiple
+        maxFiles={1000}
         maxSize={512 * 1024 * 1024}
         disabled={session.loading}
         paste="focus"
-        label="Choose PDF"
-        title="Drop the PDF here"
-        hint="or choose a file. It is read only on this device."
+        label="Choose PDFs"
+        title="Drop PDFs here"
+        hint="One report or many files. Read only on this device."
         onFilesAccepted={(files) => {
-          const file = files[0]
-          if (file) void session.loadFile(file)
+          if (files.length) void session.loadFiles(files)
         }}
         onFilesRejected={(rejections) => {
           const reason = rejections[0]?.reason ?? 'type'
@@ -49,8 +48,10 @@ export function UploadStep({ session }: { session: Session }) {
 
       {session.loading && (
         <div className="flex items-center gap-2 text-[13px] text-fg-2">
-          <Spinner size="sm" label="Opening the PDF" />
-          Opening the PDF…
+          <Spinner size="sm" label="Opening PDFs" />
+          {session.loadProgress
+            ? `Reading ${session.loadProgress.done + 1} of ${session.loadProgress.total} · ${session.loadProgress.name}`
+            : 'Opening PDFs…'}
         </div>
       )}
 
@@ -70,7 +71,7 @@ export function UploadStep({ session }: { session: Session }) {
         >
           <div className="flex items-center gap-2 text-[13px] font-medium">
             <Lock />
-            PDF password
+            {session.passwordFor ? `Password for ${session.passwordFor}` : 'PDF password'}
           </div>
           <Input
             type="password"
@@ -98,9 +99,11 @@ export function UploadStep({ session }: { session: Session }) {
             <div className="min-w-0">
               <p className="truncate text-[13px] font-medium">{session.doc.name}</p>
               <p className="text-[12px] text-fg-3">
-                {session.doc.pageCount} {session.doc.pageCount === 1 ? 'page' : 'pages'} · {formatBytes(session.doc.size)} ·{' '}
-                {formatMillimeters(first.widthPt, first.heightPt)}
+                {session.doc.fileCount} {session.doc.fileCount === 1 ? 'file' : 'files'} · {session.doc.pageCount}{' '}
+                {session.doc.pageCount === 1 ? 'page' : 'pages'} · {formatBytes(session.doc.size)}
+                {session.doc.fileCount === 1 ? ` · ${formatMillimeters(first.widthPt, first.heightPt)}` : ''}
                 {session.doc.mixed ? ' · mixed sizes' : ''}
+                {session.doc.disambiguated ? ' · duplicate names made unique' : ''}
               </p>
             </div>
           </div>
@@ -108,6 +111,16 @@ export function UploadStep({ session }: { session: Session }) {
             Define area
           </Button>
         </div>
+      )}
+
+      {session.doc && session.doc.skipped.length > 0 && (
+        <Callout tone="warning" title="Some files were skipped">
+          {session.doc.skipped
+            .slice(0, 4)
+            .map((file) => `${file.name}: ${file.message}`)
+            .join(' ')}
+          {session.doc.skipped.length > 4 ? ` ${session.doc.skipped.length - 4} more.` : ''}
+        </Callout>
       )}
 
       <div className="flex flex-col items-start gap-2 rounded-xl border border-dashed border-[var(--lilac-deep)] bg-[var(--blush)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
