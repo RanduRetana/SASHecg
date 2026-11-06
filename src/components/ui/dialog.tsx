@@ -283,7 +283,7 @@ export function DialogClose({ variant = "secondary", className, ...rest }: Dialo
         "outline-none focus-visible:outline-solid focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-fg-3",
         "transition-[background-color,border-color,color,scale] duration-150 ease-out-quart active:scale-[0.97] active:duration-75",
         "data-disabled:pointer-events-none data-disabled:opacity-50",
-        variant === "primary" && "bg-fg text-frame shadow-[var(--shadow)] hover:bg-fg/90",
+        variant === "primary" && "bg-[var(--accent)] text-white shadow-[var(--shadow)] hover:bg-[var(--accent-hover)]",
         variant === "secondary" && "border border-line-2 bg-raised text-fg shadow-[var(--shadow)] hover:border-fg-4 hover:bg-hover",
         variant === "ghost" && "text-fg-2 hover:bg-hover hover:text-fg",
         className,

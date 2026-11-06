@@ -1,24 +1,24 @@
 # SASHecg
 
-SASHecg (se pronuncia «sash» + «ECG») anonimiza informes de electrocardiograma de una página que llegan juntos en un PDF. Todo el trabajo ocurre en el navegador: el archivo no se sube a ningún servidor.
+SASHecg (pronounced “sash” plus “ECG”) anonymizes one-page ECG reports that arrive together in a single PDF. All of the work happens in the browser. The file is never uploaded.
 
-Sirve cuando un hospital entrega cientos de hojas con los datos del paciente en la misma esquina superior izquierda. Marcas esa zona una vez, la aplicas a todas las páginas y descargas un ZIP con un PDF por hoja.
+Use it when a batch of pages puts the patient details in the same upper-left corner. Mark that zone once, apply it to every page, and download a ZIP with one PDF per page.
 
-## Privacidad
+## Privacy
 
-- No hay backend, cuentas ni telemetría.
-- El PDF, la contraseña y las imágenes se quedan en la memoria de la pestaña.
-- La contraseña, si el archivo está cifrado, solo se usa para abrirlo en este dispositivo y no se guarda.
-- Al recargar o cerrar la pestaña, esos datos se olvidan.
-- La anonimización es permanente. Cada página se rasteriza (objetivo 220 ppp, dentro de 200–300 cuando el tamaño lo permite), se pinta un rectángulo opaco encima y se guarda como un PDF de una sola imagen. No se copia el texto, ni los metadatos, ni una capa escondida debajo de la máscara.
-- SASHecg solo tapa el rectángulo que configuras. No busca otros nombres, fechas o números que queden a la vista.
+- There is no backend, account, or telemetry.
+- The PDF, the password, and the images stay in this tab’s memory.
+- A password, if the file is encrypted, is used only to open it on this device and is not saved.
+- Reloading or closing the tab forgets that data.
+- Anonymization is permanent. Each page is rasterized (target 220 dpi, within 200–300 when the page size allows), an opaque rectangle is painted over the area, and the result is saved as a one-image PDF. The original text, metadata, and anything under the mask are not copied.
+- SASHecg covers only the rectangle you set. It does not search for other names, dates, or numbers that remain visible.
 
-## Requisitos
+## Requirements
 
-- [Bun](https://bun.sh) 1.1 o posterior
-- Un navegador actual (Chrome, Edge, Firefox o Safari)
+- [Bun](https://bun.sh) 1.1 or newer
+- A current browser (Chrome, Edge, Firefox, or Safari)
 
-## Comandos
+## Commands
 
 ```bash
 bun install
@@ -30,47 +30,47 @@ bun run lint
 bun test
 ```
 
-`bun test` usa el ejecutor de Bun. Incluye la geometría del recuadro, los nombres de archivo, el aplanado de una página y una prueba de integración: 100 páginas de entrada producen 100 PDF, sin el texto marcado y con los píxeles del área sustituidos.
+`bun test` uses Bun’s test runner. It covers rectangle geometry, file names, page flattening, and an integration case: 100 input pages produce 100 PDFs, the marked text is gone, and the pixels in the target area are replaced.
 
-## Uso
+## Workflow
 
-1. **Subir.** Elige un PDF o suéltalo. Si está protegido, la contraseña se pide en la página. También puedes crear un PDF sintético de tres páginas, sin datos reales, para ensayar.
-2. **Definir área.** El recuadro inicial cubre la esquina superior izquierda (30 % del ancho y 15,5 % del alto). Arrástralo, usa los tiradores o escribe X, Y, ancho y alto en fracciones de 0 a 1. El origen es la esquina superior izquierda de la página tal como se ve. «Todas» aplica la misma fracción a cada hoja. «Excepción» guarda otra área para la página visible o para las que hayas seleccionado.
-3. **Revisar.** Al procesar se generan miniaturas ya anonimizadas. Puedes marcar páginas, ajustar una excepción y reprocesar solo esas. Mayús y clic selecciona un rango.
-4. **Exportar.** El ZIP contiene `ecg-001.pdf`, `ecg-002.pdf`, … con al menos tres dígitos. El nombre del ZIP sale del archivo original, por ejemplo `informe-anonimizado.zip`. Un segundo clic no dispara otra descarga.
+1. **Upload.** Choose a PDF or drop it. If it is protected, the password is requested on the page. You can also create a three-page synthetic PDF, with no real data, to practice.
+2. **Define area.** The starting rectangle covers the upper left (30% of the width and 15.5% of the height). Drag it, use the handles, or type X, Y, width, and height as fractions from 0 to 1. The origin is the top-left of the page as it is displayed. “All pages” applies the same fraction to every sheet. “Exception” stores a different area for the visible page or for the pages you selected.
+3. **Review.** Processing builds anonymized thumbnails. Select pages, adjust an exception, and reprocess only those. Shift-click selects a range.
+4. **Export.** The ZIP contains `ecg-001.pdf`, `ecg-002.pdf`, and so on, with at least three digits. The ZIP name comes from the original file, for example `report-anonymized.zip`. A second click does not start another download.
 
-«Nuevo archivo» borra el documento de esta pestaña.
+“New file” clears the document from this tab.
 
-## Cómo está hecho
+## How it is built
 
-Aplicación de una sola página con React, TypeScript y Vite. Bun instala, ejecuta los tests y el servidor de desarrollo.
+A single-page app in React, TypeScript, and Vite. Bun installs dependencies, runs the tests, and starts the dev server.
 
-| Pieza | Para qué |
+| Piece | Role |
 | --- | --- |
-| PDF.js | Abrir el PDF y dibujar cada página, con rotación incluida |
-| pdf-lib | Crear el PDF de salida, solo con la imagen ya tapada |
-| fflate | Armar el ZIP en el navegador |
-| Stealth UI | Controles de la interfaz |
+| PDF.js | Open the PDF and draw each page, including rotation |
+| pdf-lib | Write the output PDF, containing only the masked image |
+| fflate | Build the ZIP in the browser |
+| Stealth UI | Interface controls |
 
-La interfaz usa el tema claro de Stealth UI, con un papel un poco más frío. Stealth UI no es un paquete npm único: es un registro de componentes en `https://www.stealth.pm/r/{name}.json`. Los que usa esta app están copiados en `src/components/ui` (botón, zona de soltar, pasos, barra de progreso, campo numérico, campo, entrada, casilla, aviso, llamada, insignia, diálogo, control segmentado, ruleta, estado vacío, área de desplazamiento, tooltip y botón de icono) junto con `src/lib/cn.ts`, `src/lib/motion.ts`, `src/lib/icons.tsx` y `src/styles/stealth.css`. No se usa el conjunto de shadcn/ui. `components.json` deja apuntado el registro `@stealth` por si más adelante quieres añadir otro componente con `bunx shadcn@latest add @stealth/nombre`.
+The interface uses Stealth UI’s light theme, retinted with an aqua page, teal structure, and purple actions. Text colors stay dark enough to meet contrast on those surfaces. Stealth UI is not a single npm package. It is a component registry at `https://www.stealth.pm/r/{name}.json`. The pieces this app uses are copied into `src/components/ui` (button, dropzone, stepper, progress bar, number field, field, input, checkbox, banner, callout, badge, dialog, segmented control, spinner, empty state, scroll area, tooltip, and icon button), plus `src/lib/cn.ts`, `src/lib/motion.ts`, `src/lib/icons.tsx`, and `src/styles/stealth.css`. The shadcn/ui component set is not used. `components.json` points at the `@stealth` registry if you later add another component with `bunx shadcn@latest add @stealth/name`.
 
-El área se guarda normalizada (0–1) respecto a la página **ya girada**, así que un bloque en la esquina superior izquierda sigue ahí aunque cambien el tamaño o la rotación. El puntero se convierte con el recuadro CSS de la página (`getBoundingClientRect`), no con los píxeles internos del lienzo.
+The area is stored normalized (0–1) against the page **after rotation**, so an upper-left block stays in the upper left when the size or rotation changes. Pointer coordinates use the page’s CSS box (`getBoundingClientRect`), not the canvas bitmap size.
 
-Si una hoja a 220 ppp pasaría de 8 megapíxeles, o si el navegador informa poca memoria libre, la resolución baja y la revisión lo avisa. El proceso es página por página y se puede cancelar.
+If a page at 220 dpi would exceed 8 megapixels, or the browser reports memory pressure, the resolution drops and review says so. Pages are processed one at a time, and the run can be cancelled.
 
-## Limitaciones
+## Limitations
 
-- Solo se elimina lo que cae dentro del rectángulo. Una anotación, un nombre en el margen o un código de barras fuera de esa zona siguen visibles en la imagen.
-- El PDF de salida es una imagen. Se lee en pantalla y se imprime, pero ya no tiene texto seleccionable ni la nitidez vectorial del original.
-- Páginas enormes pueden quedar por debajo de 200 ppp para no agotar la memoria.
-- Un PDF de más de unos cientos de páginas ocupa bastante RAM porque las imágenes resultantes se conservan hasta la descarga.
-- Hace falta la contraseña si el archivo está cifrado. SASHecg no la recupera.
-- El cifrado del PDF de salida no se vuelve a aplicar: son documentos nuevos, sin los metadatos del paciente.
-- La cuadrícula de miniaturas muestra la imagen anonimizada, no el archivo original.
+- Only what falls inside the rectangle is removed. A note, a name in the margin, or a barcode outside that zone remains visible in the image.
+- The output PDF is a picture. It can be viewed and printed, but it no longer has selectable text or the original vector sharpness.
+- Very large pages can fall below 200 dpi so the browser does not run out of memory.
+- A PDF of several hundred pages uses a lot of RAM because the resulting images are kept until download.
+- An encrypted PDF needs its password. SASHecg cannot recover it.
+- Output PDFs are new documents and do not copy the source metadata.
+- The thumbnail grid shows the anonymized image, not the original file.
 
-## Llevar el código a tu Mac y a GitHub
+## Copy the project to your Mac and GitHub
 
-Este proyecto se preparó en un entorno remoto. No se creó ni se publicó un repositorio en GitHub ni en Origin. Cuando tengas la carpeta en `~/Documents/breakaway/sash-ecg`:
+This project was prepared remotely. No GitHub or Origin repository was created or published. Once the folder is at `~/Documents/breakaway/sash-ecg`:
 
 ```bash
 cd ~/Documents/breakaway/sash-ecg
@@ -79,17 +79,17 @@ bun test
 bun run dev
 ```
 
-Para publicarlo tú mismo, crea en GitHub un repositorio vacío (sin README y sin licencia) y, desde esa carpeta:
+To publish it yourself, create an empty GitHub repository (no README and no license) and, from that folder:
 
 ```bash
 git init
 git add .
-git commit -m "Inicializa SASHecg"
+git commit -m "Initialize SASHecg"
 git branch -M main
-git remote add origin git@github.com:TU_USUARIO/sash-ecg.git
+git remote add origin git@github.com:YOUR_USER/sash-ecg.git
 git push -u origin main
 ```
 
-Si la carpeta ya es un repositorio, no hace falta `git init`: añade el remoto y haz push. No subas `node_modules` ni `dist`; ya están en `.gitignore`.
+If the folder is already a repository, skip `git init`: add the remote and push. Do not upload `node_modules` or `dist`. They are listed in `.gitignore`.
 
-No hay archivo de licencia.
+There is no license file.

@@ -8,10 +8,10 @@ import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
 
 const REJECTION: Record<string, string> = {
-  type: 'Solo se aceptan PDF.',
-  size: 'El archivo supera el límite de 512 MB de este navegador.',
-  empty: 'El archivo está vacío.',
-  count: 'Suelta un solo PDF cada vez.',
+  type: 'Only PDF files are accepted.',
+  size: 'The file is over this browser’s 512 MB limit.',
+  empty: 'The file is empty.',
+  count: 'Drop one PDF at a time.',
 }
 
 export function UploadStep({ session }: { session: Session }) {
@@ -20,10 +20,10 @@ export function UploadStep({ session }: { session: Session }) {
   return (
     <section className="grid gap-4">
       <header className="grid gap-1">
-        <h1 className="text-xl font-medium tracking-[-0.03em]">Sube un informe</h1>
+        <h1 className="text-xl font-medium tracking-[-0.03em]">Upload a report</h1>
         <p className="max-w-2xl text-[13.5px] leading-relaxed text-fg-2">
-          Un PDF de varias páginas, como los que llegan juntos desde el electrocardiógrafo. Los datos del paciente
-          suelen estar en la misma esquina de cada hoja.
+          One multi-page PDF, the kind that arrives together from the electrocardiograph. Patient details usually sit
+          in the same corner of every page.
         </p>
       </header>
 
@@ -34,28 +34,28 @@ export function UploadStep({ session }: { session: Session }) {
         maxSize={512 * 1024 * 1024}
         disabled={session.loading}
         paste="focus"
-        label="Elegir PDF"
-        title="Suelta el PDF aquí"
-        hint="o elige el archivo. Se lee solo en este dispositivo."
+        label="Choose PDF"
+        title="Drop the PDF here"
+        hint="or choose a file. It is read only on this device."
         onFilesAccepted={(files) => {
           const file = files[0]
           if (file) void session.loadFile(file)
         }}
         onFilesRejected={(rejections) => {
           const reason = rejections[0]?.reason ?? 'type'
-          session.reportFileError(REJECTION[reason] ?? 'No se pudo usar ese archivo.')
+          session.reportFileError(REJECTION[reason] ?? 'That file could not be used.')
         }}
       />
 
       {session.loading && (
         <div className="flex items-center gap-2 text-[13px] text-fg-2">
-          <Spinner size="sm" label="Abriendo el PDF" />
-          Abriendo el PDF…
+          <Spinner size="sm" label="Opening the PDF" />
+          Opening the PDF…
         </div>
       )}
 
       {session.fileError && (
-        <Callout tone="danger" title="No se abrió">
+        <Callout tone="danger" title="Could not open">
           {session.fileError}
         </Callout>
       )}
@@ -70,23 +70,23 @@ export function UploadStep({ session }: { session: Session }) {
         >
           <div className="flex items-center gap-2 text-[13px] font-medium">
             <Lock />
-            Contraseña del PDF
+            PDF password
           </div>
           <Input
             type="password"
             autoComplete="off"
             value={session.password}
             onValueChange={session.setPassword}
-            placeholder="No sale de este navegador"
-            aria-label="Contraseña del PDF"
+            placeholder="Stays in this browser"
+            aria-label="PDF password"
             invalid={Boolean(session.passwordError)}
           />
           <p className="text-[12px] leading-relaxed text-fg-3">
-            Se usa una sola vez para descifrar el archivo aquí. No se guarda ni se envía.
+            Used once to decrypt the file here. It is not saved and it is not sent anywhere.
           </p>
           {session.passwordError && <p className="text-[12px] text-danger">{session.passwordError}</p>}
-          <Button type="submit" variant="primary" loading={session.loading} loadingText="Comprobando…">
-            Abrir
+          <Button type="submit" variant="primary" loading={session.loading} loadingText="Checking…">
+            Open
           </Button>
         </form>
       )}
@@ -98,25 +98,25 @@ export function UploadStep({ session }: { session: Session }) {
             <div className="min-w-0">
               <p className="truncate text-[13px] font-medium">{session.doc.name}</p>
               <p className="text-[12px] text-fg-3">
-                {session.doc.pageCount} {session.doc.pageCount === 1 ? 'página' : 'páginas'} · {formatBytes(session.doc.size)} ·{' '}
+                {session.doc.pageCount} {session.doc.pageCount === 1 ? 'page' : 'pages'} · {formatBytes(session.doc.size)} ·{' '}
                 {formatMillimeters(first.widthPt, first.heightPt)}
-                {session.doc.mixed ? ' · tamaños distintos' : ''}
+                {session.doc.mixed ? ' · mixed sizes' : ''}
               </p>
             </div>
           </div>
           <Button type="button" variant="primary" onClick={() => session.goTo(1)}>
-            Definir área
+            Define area
           </Button>
         </div>
       )}
 
-      <div className="flex flex-col items-start gap-2 rounded-xl border border-dashed border-line-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col items-start gap-2 rounded-xl border border-dashed border-[var(--accent)]/35 bg-[var(--accent-soft)]/40 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="max-w-xl text-[12.5px] leading-relaxed text-fg-2">
-          ¿Quieres ensayar sin un informe real? El ejemplo son tres páginas dibujadas, con un nombre ficticio en la
-          esquina y la leyenda «sin datos reales».
+          Want to practice without a real report? The sample is three drawn pages, with a fictitious name in the corner
+          and a “no real data” line.
         </p>
         <Button type="button" variant="secondary" loading={session.loading} onClick={() => void session.loadSample()}>
-          Crear PDF de ejemplo
+          Create sample PDF
         </Button>
       </div>
     </section>

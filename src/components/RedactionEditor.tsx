@@ -4,14 +4,14 @@ import { applyHandle, type Handle, type NormalizedRect } from '@/core/geometry'
 import { Spinner } from '@/components/ui/spinner'
 
 const HANDLES: { id: Exclude<Handle, 'move'>; label: string; className: string }[] = [
-  { id: 'nw', label: 'Esquina superior izquierda', className: 'left-0 top-0 -translate-x-1/2 -translate-y-1/2 cursor-nwse-resize' },
-  { id: 'n', label: 'Borde superior', className: 'left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 cursor-ns-resize' },
-  { id: 'ne', label: 'Esquina superior derecha', className: 'right-0 top-0 translate-x-1/2 -translate-y-1/2 cursor-nesw-resize' },
-  { id: 'e', label: 'Borde derecho', className: 'right-0 top-1/2 translate-x-1/2 -translate-y-1/2 cursor-ew-resize' },
-  { id: 'se', label: 'Esquina inferior derecha', className: 'right-0 bottom-0 translate-x-1/2 translate-y-1/2 cursor-nwse-resize' },
-  { id: 's', label: 'Borde inferior', className: 'bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 cursor-ns-resize' },
-  { id: 'sw', label: 'Esquina inferior izquierda', className: 'bottom-0 left-0 -translate-x-1/2 translate-y-1/2 cursor-nesw-resize' },
-  { id: 'w', label: 'Borde izquierdo', className: 'left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 cursor-ew-resize' },
+  { id: 'nw', label: 'Top-left corner', className: 'left-0 top-0 -translate-x-1/2 -translate-y-1/2 cursor-nwse-resize' },
+  { id: 'n', label: 'Top edge', className: 'left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 cursor-ns-resize' },
+  { id: 'ne', label: 'Top-right corner', className: 'right-0 top-0 translate-x-1/2 -translate-y-1/2 cursor-nesw-resize' },
+  { id: 'e', label: 'Right edge', className: 'right-0 top-1/2 translate-x-1/2 -translate-y-1/2 cursor-ew-resize' },
+  { id: 'se', label: 'Bottom-right corner', className: 'right-0 bottom-0 translate-x-1/2 translate-y-1/2 cursor-nwse-resize' },
+  { id: 's', label: 'Bottom edge', className: 'bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 cursor-ns-resize' },
+  { id: 'sw', label: 'Bottom-left corner', className: 'bottom-0 left-0 -translate-x-1/2 translate-y-1/2 cursor-nesw-resize' },
+  { id: 'w', label: 'Left edge', className: 'left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 cursor-ew-resize' },
 ]
 
 type Drag = {
@@ -99,7 +99,7 @@ export function RedactionEditor({
         const name = caught instanceof Error ? caught.name : ''
         if (name === 'RenderingCancelledException') return
         setRendering(false)
-        setError('No se pudo dibujar esta página.')
+        setError('Could not draw this page.')
       }
     }
 
@@ -168,7 +168,7 @@ export function RedactionEditor({
         ref={frameRef}
         tabIndex={0}
         role="application"
-        aria-label="Área que se eliminará. Flechas para moverla. Mayús da un paso mayor. Alt y flechas cambian el tamaño desde la esquina inferior derecha."
+        aria-label="Area that will be removed. Arrow keys move it. Shift takes a larger step. Alt and the arrow keys resize it from the bottom-right corner."
         onKeyDown={onKeyDown}
         className="relative outline-none focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-4 focus-visible:outline-fg-3"
         style={box ? { width: box.width, height: box.height } : { width: '100%', minHeight: 280 }}
@@ -176,7 +176,7 @@ export function RedactionEditor({
         <canvas ref={canvasRef} className="block bg-white shadow-[var(--shadow)]" />
         {box && (
           <div
-            className="absolute touch-none border-2 border-[#9d2c2c] bg-[#9d2c2c]/30"
+            className="absolute touch-none border-2 border-[var(--accent)] bg-[var(--accent)]/25"
             style={{
               left: `${rect.x * 100}%`,
               top: `${rect.y * 100}%`,
@@ -191,15 +191,15 @@ export function RedactionEditor({
               onPointerUp={end}
               onPointerCancel={end}
             />
-            <span className="pointer-events-none absolute left-1 top-1 rounded bg-[#9d2c2c] px-1.5 py-0.5 text-[10px] font-medium text-white">
-              Se eliminará
+            <span className="pointer-events-none absolute left-1 top-1 rounded bg-[var(--accent)] px-1.5 py-0.5 text-[10px] font-medium text-white">
+              Will be removed
             </span>
             {HANDLES.map((handle) => (
               <button
                 key={handle.id}
                 type="button"
                 aria-label={handle.label}
-                className={`absolute z-10 size-8 rounded-full border border-[#9d2c2c] bg-white shadow-[var(--shadow)] before:absolute before:inset-2.5 before:rounded-full before:bg-[#9d2c2c] pointer-coarse:size-11 ${handle.className}`}
+                className={`absolute z-10 size-8 rounded-full border border-[var(--accent)] bg-white shadow-[var(--shadow)] before:absolute before:inset-2.5 before:rounded-full before:bg-[var(--accent)] pointer-coarse:size-11 ${handle.className}`}
                 onPointerDown={(event) => begin(event, handle.id)}
                 onPointerMove={move}
                 onPointerUp={end}
@@ -210,7 +210,7 @@ export function RedactionEditor({
         )}
         {rendering && (
           <div className="absolute inset-0 grid place-items-center bg-page/70">
-            <Spinner label="Dibujando la página" />
+            <Spinner label="Drawing the page" />
           </div>
         )}
         {error && (

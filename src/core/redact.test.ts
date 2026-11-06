@@ -2,7 +2,7 @@ import { createCanvas } from '@napi-rs/canvas'
 import { expect, test } from 'bun:test'
 import { applyOpaqueRect, burnRedaction, MASK_COLOR } from './redact'
 
-test('el rectángulo opaco sustituye los píxeles y no deja alfa', () => {
+test('the opaque rectangle replaces pixels and leaves no transparency', () => {
   const width = 10
   const height = 8
   const pixels = new Uint8ClampedArray(width * height * 4)
@@ -26,7 +26,7 @@ test('el rectángulo opaco sustituye los píxeles y no deja alfa', () => {
   expect(at(9, 4)).toEqual([255, 0, 0, 128])
 })
 
-test('quemar la máscara en un lienzo reemplaza la misma zona', () => {
+test('burning the mask on a canvas replaces the same zone', () => {
   const canvas = createCanvas(20, 10)
   const ctx = canvas.getContext('2d')
   ctx.fillStyle = '#0000ff'

@@ -9,7 +9,7 @@ import {
   DEFAULT_REDACTION,
 } from './geometry'
 
-test('la normalización recorta el rectángulo al interior de la página', () => {
+test('normalization keeps the rectangle inside the page', () => {
   expect(clampRect({ x: -0.2, y: 0.1, width: 0.5, height: 0.2 })).toEqual({
     x: 0,
     y: 0.1,
@@ -31,7 +31,7 @@ test('la normalización recorta el rectángulo al interior de la página', () =>
   expect(clampRect({ x: Number.NaN, y: 0, width: 0.2, height: 0.2 }).x).toBe(0)
 })
 
-test('los píxeles salen de las fracciones de la página, no del tamaño en pantalla', () => {
+test('pixels come from page fractions, not from the on-screen size', () => {
   expect(normalizedToPixels({ x: 0, y: 0, width: 0.3, height: 0.155 }, 1000, 2000)).toEqual({
     x: 0,
     y: 0,
@@ -41,7 +41,7 @@ test('los píxeles salen de las fracciones de la página, no del tamaño en pant
   expect(normalizedToPixels({ x: 0.25, y: 0.5, width: 0.5, height: 0.25 }, 101, 101).x).toBe(25)
 })
 
-test('el puntero usa el recuadro CSS aunque el bitmap sea más grande', () => {
+test('the pointer uses the CSS box even when the bitmap is larger', () => {
   const displayed = { left: 40, top: 80, width: 400, height: 300 }
   expect(pointerToNormalized(240, 230, displayed)).toEqual({ x: 0.5, y: 0.5 })
   expect(pointerToNormalized(0, 0, displayed)).toEqual({ x: 0, y: 0 })
@@ -49,7 +49,7 @@ test('el puntero usa el recuadro CSS aunque el bitmap sea más grande', () => {
   expect(pointerToNormalized(40, 80, { left: 40, top: 80, width: 0, height: 0 })).toEqual({ x: 0, y: 0 })
 })
 
-test('arrastrar y redimensionar respetan los bordes', () => {
+test('dragging and resizing stay inside the edges', () => {
   const start = { x: 0.2, y: 0.2, width: 0.4, height: 0.3 }
   expect(rectsEqual(applyHandle(start, 'move', 0.1, -0.05), { x: 0.3, y: 0.15, width: 0.4, height: 0.3 })).toBe(true)
   expect(applyHandle(start, 'move', -1, 0).x).toBe(0)
@@ -63,7 +63,7 @@ test('arrastrar y redimensionar respetan los bordes', () => {
   expect(flipped.y).toBeGreaterThanOrEqual(0)
 })
 
-test('una excepción sustituye el área común solo en esa página', () => {
+test('an exception replaces the shared area only on that page', () => {
   const shared = rectForPage(0, DEFAULT_REDACTION, { 2: { x: 0.4, y: 0.4, width: 0.2, height: 0.2 } })
   const custom = rectForPage(2, DEFAULT_REDACTION, { 2: { x: 0.4, y: 0.4, width: 0.2, height: 0.2 } })
   expect(shared.exception).toBe(false)

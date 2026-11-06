@@ -4,13 +4,13 @@ export function buildZip(files: { name: string; data: Uint8Array }[]): Promise<U
   const input: Record<string, Uint8Array> = {}
   for (const file of files) {
     if (input[file.name]) {
-      throw new Error(`Nombre de archivo repetido: ${file.name}`)
+      throw new Error(`Duplicate file name: ${file.name}`)
     }
     input[file.name] = file.data
   }
   return new Promise((resolve, reject) => {
     zip(input, { level: 0 }, (error, data) => {
-      if (error || !data) reject(error ?? new Error('No se pudo crear el ZIP.'))
+      if (error || !data) reject(error ?? new Error('Could not create the ZIP.'))
       else resolve(data)
     })
   })

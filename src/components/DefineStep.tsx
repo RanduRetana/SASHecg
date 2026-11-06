@@ -22,10 +22,10 @@ export function DefineStep({ session }: { session: Session }) {
   return (
     <section className="grid gap-4">
       <header className="grid gap-1">
-        <h1 className="text-xl font-medium tracking-[-0.03em]">Marca la esquina superior izquierda</h1>
+        <h1 className="text-xl font-medium tracking-[-0.03em]">Mark the upper-left corner</h1>
         <p className="max-w-2xl text-[13.5px] leading-relaxed text-fg-2">
-          El recuadro de partida cubre el bloque de identificadores. Ajústalo a tu plantilla. Solo se tapa esa zona:
-          el trazado y el resto de la hoja se conservan.
+          The starting rectangle covers the identifier block. Fit it to your template. Only that zone is covered: the
+          trace and the rest of the page stay.
         </p>
       </header>
 
@@ -40,8 +40,8 @@ export function DefineStep({ session }: { session: Session }) {
             onChange={session.updateRect}
           />
           <p className="mt-2 text-[12px] leading-relaxed text-fg-3">
-            La máscara roja es una guía. Al procesar, esa zona se pinta con un recuadro opaco sobre una imagen de la
-            página: el texto original no queda debajo.
+            The purple mask is a guide. When you process, that zone is painted with an opaque rectangle on a picture of
+            the page. The original text is not left underneath.
           </p>
         </div>
 
@@ -49,28 +49,28 @@ export function DefineStep({ session }: { session: Session }) {
           <SegmentedControl
             value={session.scope}
             onValueChange={(value) => session.setScope(value === 'pages' ? 'pages' : 'all')}
-            aria-label="Dónde se aplica el área"
+            aria-label="Where the area applies"
             fill
           >
-            <SegmentedControlItem value="all">Todas</SegmentedControlItem>
-            <SegmentedControlItem value="pages">Excepción</SegmentedControlItem>
+            <SegmentedControlItem value="all">All pages</SegmentedControlItem>
+            <SegmentedControlItem value="pages">Exception</SegmentedControlItem>
           </SegmentedControl>
 
           {session.scope === 'pages' ? (
-            <Callout tone="warning" size="sm" title="Solo estas páginas">
+            <Callout tone="warning" size="sm" title="These pages only">
               {session.targets.length > 1
-                ? `Al mover el recuadro, las ${session.targets.length} páginas seleccionadas pasan a usar esta misma área.`
-                : `La página ${session.editorPage + 1} usará su propia área. Las demás siguen el área común.`}
+                ? `Moving the rectangle gives the same area to all ${session.targets.length} selected pages.`
+                : `Page ${session.editorPage + 1} will use its own area. The others keep the shared area.`}
             </Callout>
           ) : (
-            <Callout tone="info" size="sm" title="Misma fracción en cada hoja">
-              Un valor de 0,30 de ancho es el 30 % de esa página, aunque el papel cambie de tamaño.
+            <Callout tone="info" size="sm" title="Same fraction on every page">
+              A width of 0.30 is 30% of that page, even if the paper size changes.
             </Callout>
           )}
 
           <div className="flex items-center justify-between gap-2">
             <IconButton
-              label="Página anterior"
+              label="Previous page"
               variant="secondary"
               disabled={session.scope === 'pages' && session.targets.length > 1 ? false : session.editorPage <= 0}
               onClick={() => session.stepEditor(-1)}
@@ -78,10 +78,10 @@ export function DefineStep({ session }: { session: Session }) {
               <ChevronLeft />
             </IconButton>
             <p className="text-center text-[13px] tabular-nums">
-              Página {session.editorPage + 1} de {doc.pageCount}
+              Page {session.editorPage + 1} of {doc.pageCount}
             </p>
             <IconButton
-              label="Página siguiente"
+              label="Next page"
               variant="secondary"
               disabled={
                 session.scope === 'pages' && session.targets.length > 1 ? false : session.editorPage >= doc.pageCount - 1
@@ -93,31 +93,31 @@ export function DefineStep({ session }: { session: Session }) {
           </div>
 
           <div className="grid grid-cols-2 gap-2">
-            <NumberField label="X" size="sm" min={0} max={1} step={0.001} locale="es" format={numberFormat} scrubSensitivity={12} value={rect.x} onValueChange={(value) => patch(session, 'x', value)} />
-            <NumberField label="Y" size="sm" min={0} max={1} step={0.001} locale="es" format={numberFormat} scrubSensitivity={12} value={rect.y} onValueChange={(value) => patch(session, 'y', value)} />
-            <NumberField label="Ancho" size="sm" min={0.02} max={1} step={0.001} locale="es" format={numberFormat} scrubSensitivity={12} value={rect.width} onValueChange={(value) => patch(session, 'width', value)} />
-            <NumberField label="Alto" size="sm" min={0.02} max={1} step={0.001} locale="es" format={numberFormat} scrubSensitivity={12} value={rect.height} onValueChange={(value) => patch(session, 'height', value)} />
+            <NumberField label="X" size="sm" min={0} max={1} step={0.001} locale="en" format={numberFormat} scrubSensitivity={12} value={rect.x} onValueChange={(value) => patch(session, 'x', value)} />
+            <NumberField label="Y" size="sm" min={0} max={1} step={0.001} locale="en" format={numberFormat} scrubSensitivity={12} value={rect.y} onValueChange={(value) => patch(session, 'y', value)} />
+            <NumberField label="Width" size="sm" min={0.02} max={1} step={0.001} locale="en" format={numberFormat} scrubSensitivity={12} value={rect.width} onValueChange={(value) => patch(session, 'width', value)} />
+            <NumberField label="Height" size="sm" min={0.02} max={1} step={0.001} locale="en" format={numberFormat} scrubSensitivity={12} value={rect.height} onValueChange={(value) => patch(session, 'height', value)} />
           </div>
           <p className="text-[12px] leading-relaxed text-fg-3">
-            Origen arriba a la izquierda. Cubre cerca del {coverage.toLocaleString('es')} % de la página. Flechas para
-            mover; Mayús acelera; Alt y flechas cambian el tamaño.
+            Origin is the top left. This covers about {coverage.toLocaleString('en')}% of the page. Arrow keys move it;
+            Shift takes a larger step; Alt and the arrows resize it.
           </p>
 
           {doc.mixed && (
-            <Callout tone="warning" size="sm" title="Páginas distintas">
-              Hay hojas de otro tamaño o giradas. Revisa las miniaturas: el área se aplica en proporción, no en
-              milímetros fijos.
+            <Callout tone="warning" size="sm" title="Pages differ">
+              Some pages have another size or rotation. Check the thumbnails: the area is a fraction of each page, not
+              a fixed measurement.
             </Callout>
           )}
 
           {session.scope === 'pages' && (
             <Button type="button" variant="ghost" onClick={() => session.clearExceptions(session.targets)}>
-              Quitar excepción
+              Remove exception
             </Button>
           )}
 
           <Button type="button" variant="secondary" onClick={() => session.updateRect({ x: 0, y: 0, width: 0.3, height: 0.155 })}>
-            Restaurar esquina inicial
+            Restore the starting corner
           </Button>
         </div>
       </div>
@@ -126,11 +126,11 @@ export function DefineStep({ session }: { session: Session }) {
         <div className="grid gap-3">
           <ProgressBar
             value={session.progress.total ? (session.progress.done / session.progress.total) * 100 : 0}
-            label="Procesando en este navegador"
-            description={`Página ${Math.min(session.progress.done + 1, session.progress.total)} de ${session.progress.total}${session.progress.dpi ? ` · ${formatDpi(session.progress.dpi)}` : ''}`}
+            label="Processing in this browser"
+            description={`Page ${Math.min(session.progress.done + 1, session.progress.total)} of ${session.progress.total}${session.progress.dpi ? ` · ${formatDpi(session.progress.dpi)}` : ''}`}
           />
           <Button type="button" variant="danger" onClick={() => session.cancel()}>
-            Cancelar
+            Cancel
           </Button>
         </div>
       )}
@@ -142,15 +142,15 @@ export function DefineStep({ session }: { session: Session }) {
             variant="primary"
             className="w-full sm:w-auto"
             loading={session.processing}
-            loadingText="Procesando…"
+            loadingText="Processing…"
             disabled={session.processing}
             onClick={() => void session.process(session.scope === 'pages' ? session.targets : undefined)}
           >
-            {session.scope === 'pages' ? 'Procesar excepción' : `Procesar ${doc.pageCount} páginas`}
+            {session.scope === 'pages' ? 'Process exception' : `Process ${doc.pageCount} pages`}
           </Button>
           {session.hasRun && (
             <Button type="button" variant="secondary" onClick={() => session.goTo(2)}>
-              Volver a la revisión
+              Back to review
             </Button>
           )}
         </div>
