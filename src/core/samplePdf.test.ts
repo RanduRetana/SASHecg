@@ -51,7 +51,7 @@ test('the practice report has four varied pages and the default area removes eve
 
   const result = await anonymizeDocument(opened.pdf, {
     pageCount: 4,
-    defaultRect: DEFAULT_REDACTION,
+    defaultRects: [DEFAULT_REDACTION],
     targetDpi: 72,
     previews: false,
     canvasFactory,

@@ -6,9 +6,12 @@ import { downloadBytes } from '@/core/download'
 import { createExportLock } from '@/core/exportLock'
 import {
   DEFAULT_REDACTION,
-  rectForPage,
-  rectsEqual,
+  rectsForPage,
+  replaceRectAt,
   roundRect,
+  sameRectList,
+  withNewRect,
+  withoutRect,
   type NormalizedRect,
 } from '@/core/geometry'
 import { batchZipName, planOutputNames } from '@/core/naming'
@@ -55,7 +58,7 @@ export type PreviewPage = {
   widthPt: number
   heightPt: number
   dpi: number
-  rect: NormalizedRect
+  rects: NormalizedRect[]
   exception: boolean
   warning?: string
 }
@@ -80,7 +83,7 @@ function toPreview(page: ProcessedPage): PreviewPage {
     widthPt: page.widthPt,
     heightPt: page.heightPt,
     dpi: page.dpi,
-    rect: page.rect,
+    rects: page.rects.map((rect) => ({ ...rect })),
     exception: page.exception,
     ...(page.warning ? { warning: page.warning } : {}),
   }
@@ -114,8 +117,9 @@ export function useSession() {
   const [password, setPassword] = useState('')
   const [passwordFor, setPasswordFor] = useState<string | null>(null)
   const [loadProgress, setLoadProgress] = useState<{ done: number; total: number; name: string } | null>(null)
-  const [defaultRect, setDefaultRect] = useState<NormalizedRect>(DEFAULT_REDACTION)
-  const [overrides, setOverrides] = useState<Record<number, NormalizedRect>>({})
+  const [defaultRects, setDefaultRects] = useState<NormalizedRect[]>([DEFAULT_REDACTION])
+  const [overrides, setOverrides] = useState<Record<number, NormalizedRect[]>>({})
+  const [selectedRect, setSelectedRect] = useState(0)
   const [scope, setScope] = useState<Scope>('all')
   const [selection, setSelection] = useState<number[]>([])
   const [editorPage, setEditorPage] = useState(0)
@@ -135,9 +139,9 @@ export function useSession() {
   const stale = useMemo(() => {
     return slots.some((slot) => {
       if (!slot) return false
-      return !rectsEqual(slot.rect, rectForPage(slot.index, defaultRect, overrides).rect)
+      return !sameRectList(slot.rects, rectsForPage(slot.index, defaultRects, overrides).rects)
     })
-  }, [slots, defaultRect, overrides])
+  }, [slots, defaultRects, overrides])
 
   const readyToExport = Boolean(
     doc &&
@@ -150,7 +154,9 @@ export function useSession() {
 
   const maxStage: Stage = !doc ? 0 : !hasRun ? 1 : readyToExport ? 3 : 2
 
-  const activeRect = scope === 'all' ? defaultRect : (overrides[editorPage] ?? defaultRect)
+  const activeRects = scope === 'all' ? defaultRects : (overrides[editorPage] ?? defaultRects)
+  const selectedIndex = Math.min(selectedRect, Math.max(0, activeRects.length - 1))
+  const activeRect = activeRects[selectedIndex] ?? DEFAULT_REDACTION
   const targets = scope === 'all' ? [] : selection.length > 0 ? selection : [editorPage]
 
   const status = processing
@@ -221,7 +227,8 @@ export function useSession() {
     setProgress(null)
     setFileError(null)
     if (mode === 'replace') {
-      setDefaultRect(DEFAULT_REDACTION)
+      setDefaultRects([DEFAULT_REDACTION])
+      setSelectedRect(0)
       setOverrides({})
       setSelection([])
       setScope('all')
@@ -368,18 +375,48 @@ export function useSession() {
     }
   }
 
-  function updateRect(rect: NormalizedRect) {
-    const next = roundRect(rect)
+  function writeRects(next: NormalizedRect[]) {
+    const rounded = (next.length > 0 ? next : [DEFAULT_REDACTION]).map((rect) => roundRect(rect))
     if (scope === 'all') {
-      setDefaultRect(next)
+      setDefaultRects(rounded)
       return
     }
     const pages = selection.length > 0 ? selection : [editorPage]
     setOverrides((current) => {
       const copy = { ...current }
-      for (const index of pages) copy[index] = next
+      for (const index of pages) copy[index] = rounded.map((rect) => ({ ...rect }))
       return copy
     })
+  }
+
+  function updateRectAt(index: number, rect: NormalizedRect) {
+    writeRects(replaceRectAt(activeRects, index, rect))
+  }
+
+  function updateRect(rect: NormalizedRect) {
+    updateRectAt(selectedIndex, rect)
+  }
+
+  function selectRect(index: number) {
+    setSelectedRect(Math.min(Math.max(0, index), Math.max(0, activeRects.length - 1)))
+  }
+
+  function addRedaction() {
+    const added = withNewRect(activeRects)
+    setSelectedRect(added.selected)
+    writeRects(added.rects)
+  }
+
+  function removeRedaction() {
+    const removed = withoutRect(activeRects, selectedIndex)
+    if (!removed) return
+    setSelectedRect(removed.selected)
+    writeRects(removed.rects)
+  }
+
+  function restoreStarting() {
+    setSelectedRect(0)
+    writeRects([DEFAULT_REDACTION])
   }
 
   function clearExceptions(indices: number[]) {
@@ -433,7 +470,7 @@ export function useSession() {
       let result
       try {
         result = await anonymizeBatch(inputs, {
-          defaultRect,
+          defaultRects,
           overrides,
           signal: controller.signal,
           canvasFactory: createBrowserCanvas,
@@ -522,8 +559,9 @@ export function useSession() {
     })
     setDoc(null)
     setStage(0)
-    setDefaultRect(DEFAULT_REDACTION)
+    setDefaultRects([DEFAULT_REDACTION])
     setOverrides({})
+    setSelectedRect(0)
     setFailures([])
     setCancelled(false)
     setHasRun(false)
@@ -636,8 +674,15 @@ export function useSession() {
     loadProgress,
     submitPassword,
     loadSample,
-    defaultRect,
+    defaultRects,
     overrides,
+    activeRects,
+    selectedIndex,
+    selectRect,
+    addRedaction,
+    removeRedaction,
+    restoreStarting,
+    canRemoveRect: activeRects.length > 1,
     scope,
     setScope: changeScope,
     stepEditor,
@@ -648,6 +693,7 @@ export function useSession() {
     activeRect,
     targets,
     updateRect,
+    updateRectAt,
     clearExceptions,
     editPages,
     slots,

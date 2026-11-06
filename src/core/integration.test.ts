@@ -21,7 +21,7 @@ test('100 input pages yield 100 PDFs and the marked text and pixels are gone', a
 
   const result = await anonymizeDocument(opened.pdf, {
     pageCount: 100,
-    defaultRect: RECT,
+    defaultRects: [RECT],
     targetDpi: 72,
     previews: false,
     canvasFactory,
@@ -98,7 +98,7 @@ test('mixed sizes and a rotation drop the text and keep the visual page', async 
 
   const result = await anonymizeDocument(opened.pdf, {
     pageCount: 3,
-    defaultRect: RECT,
+    defaultRects: [RECT],
     targetDpi: 72,
     previews: false,
     canvasFactory,

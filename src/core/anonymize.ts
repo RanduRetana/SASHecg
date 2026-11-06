@@ -1,5 +1,5 @@
 import type { PDFDocumentProxy } from 'pdfjs-dist'
-import { rectForPage, type NormalizedRect } from './geometry'
+import { rectsForPage, type NormalizedRect } from './geometry'
 import { flattenPage, ProcessCancelled, type CanvasFactory } from './flatten'
 import { pageFileName } from './naming'
 
@@ -11,7 +11,7 @@ export type ProcessedPage = {
   widthPt: number
   heightPt: number
   dpi: number
-  rect: NormalizedRect
+  rects: NormalizedRect[]
   exception: boolean
   warning?: string
 }
@@ -40,8 +40,8 @@ export async function anonymizeDocument(
   pdf: PDFDocumentProxy,
   options: {
     pageCount: number
-    defaultRect: NormalizedRect
-    overrides?: Readonly<Record<number, NormalizedRect>>
+    defaultRects: readonly NormalizedRect[]
+    overrides?: Readonly<Record<number, readonly NormalizedRect[] | undefined>>
     indices?: number[]
     /** Local page index to ZIP entry name. Defaults to ecg-001.pdf. */
     filenames?: Readonly<Record<number, string>>
@@ -67,14 +67,14 @@ export async function anonymizeDocument(
     }
     const index = indices[cursor]
     if (index === undefined) continue
-    const { rect, exception } = rectForPage(index, options.defaultRect, options.overrides)
+    const { rects, exception } = rectsForPage(index, options.defaultRects, options.overrides)
     if (!memoryPressure && options.memoryPressure?.()) memoryPressure = true
 
     try {
       const flat = await flattenPage({
         pdf,
         pageIndex: index,
-        rect,
+        rects,
         canvasFactory: options.canvasFactory,
         targetDpi: options.targetDpi,
         maxPixels: options.maxPixels,
@@ -94,7 +94,7 @@ export async function anonymizeDocument(
         widthPt: flat.widthPt,
         heightPt: flat.heightPt,
         dpi: flat.dpi,
-        rect,
+        rects,
         exception,
         ...(warning ? { warning } : {}),
       })

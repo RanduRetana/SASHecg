@@ -12,8 +12,8 @@ export type BatchInput = {
 export async function anonymizeBatch(
   inputs: BatchInput[],
   options: {
-    defaultRect: NormalizedRect
-    overrides?: Readonly<Record<number, NormalizedRect>>
+    defaultRects: readonly NormalizedRect[]
+    overrides?: Readonly<Record<number, readonly NormalizedRect[] | undefined>>
     signal?: AbortSignal
     canvasFactory: CanvasFactory
     targetDpi?: number
@@ -35,16 +35,16 @@ export async function anonymizeBatch(
     try {
       const filenames: Record<number, string> = {}
       const globalIndexes: Record<number, number> = {}
-      const overrides: Record<number, NormalizedRect> = {}
+      const overrides: Record<number, NormalizedRect[]> = {}
       for (const page of input.pages) {
         filenames[page.localIndex] = page.filename
         globalIndexes[page.localIndex] = page.globalIndex
         const custom = options.overrides?.[page.globalIndex]
-        if (custom) overrides[page.localIndex] = custom
+        if (custom && custom.length > 0) overrides[page.localIndex] = custom.map((rect) => ({ ...rect }))
       }
       const result = await anonymizeDocument(opened.pdf, {
         pageCount: input.pages.length,
-        defaultRect: options.defaultRect,
+        defaultRects: options.defaultRects,
         overrides,
         indices: input.pages.map((page) => page.localIndex),
         filenames,

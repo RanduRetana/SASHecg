@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
 import { applyHandle, type Handle, type NormalizedRect } from '@/core/geometry'
+import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 
 const HANDLES: { id: Exclude<Handle, 'move'>; label: string; className: string }[] = [
@@ -16,6 +17,7 @@ const HANDLES: { id: Exclude<Handle, 'move'>; label: string; className: string }
 
 type Drag = {
   handle: Handle
+  index: number
   pointerId: number
   startX: number
   startY: number
@@ -29,28 +31,40 @@ export function RedactionEditor({
   pageIndex,
   widthPt,
   heightPt,
-  rect,
+  rects,
+  selected,
+  onSelect,
   onChange,
+  onAdd,
+  onRemove,
+  canRemove,
 }: {
   pdf: PDFDocumentProxy
   pageIndex: number
   widthPt: number
   heightPt: number
-  rect: NormalizedRect
-  onChange: (rect: NormalizedRect) => void
+  rects: NormalizedRect[]
+  selected: number
+  onSelect: (index: number) => void
+  onChange: (index: number, rect: NormalizedRect) => void
+  onAdd: () => void
+  onRemove: () => void
+  canRemove: boolean
 }) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const frameRef = useRef<HTMLDivElement>(null)
   const dragRef = useRef<Drag | null>(null)
-  const rectRef = useRef(rect)
+  const rectsRef = useRef(rects)
+  const selectedRef = useRef(selected)
   const [box, setBox] = useState<{ width: number; height: number } | null>(null)
   const [rendering, setRendering] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    rectRef.current = rect
-  }, [rect])
+    rectsRef.current = rects
+    selectedRef.current = selected
+  }, [rects, selected])
 
   useEffect(() => {
     const wrap = wrapRef.current
@@ -118,19 +132,22 @@ export function RedactionEditor({
     }
   }, [pdf, pageIndex, widthPt, heightPt])
 
-  const begin = (event: PointerEvent<HTMLElement>, handle: Handle) => {
+  const begin = (event: PointerEvent<HTMLElement>, handle: Handle, index: number) => {
     const frame = frameRef.current
-    if (!frame) return
+    const origin = rectsRef.current[index]
+    if (!frame || !origin) return
     event.preventDefault()
     event.stopPropagation()
     event.currentTarget.setPointerCapture(event.pointerId)
+    onSelect(index)
     const bounds = frame.getBoundingClientRect()
     dragRef.current = {
       handle,
+      index,
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
-      origin: rectRef.current,
+      origin,
       width: bounds.width || 1,
       height: bounds.height || 1,
     }
@@ -141,7 +158,7 @@ export function RedactionEditor({
     if (!drag || drag.pointerId !== event.pointerId) return
     const dx = (event.clientX - drag.startX) / drag.width
     const dy = (event.clientY - drag.startY) / drag.height
-    onChange(applyHandle(drag.origin, drag.handle, dx, dy))
+    onChange(drag.index, applyHandle(drag.origin, drag.handle, dx, dy))
   }
 
   const end = (event: PointerEvent<HTMLElement>) => {
@@ -149,7 +166,9 @@ export function RedactionEditor({
   }
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if ((event.target as HTMLElement).closest('input, textarea')) return
+    if ((event.target as HTMLElement).closest('input, textarea, button')) return
+    const current = rectsRef.current[selectedRef.current]
+    if (!current) return
     const step = event.shiftKey ? 0.01 : 0.002
     let dx = 0
     let dy = 0
@@ -159,55 +178,90 @@ export function RedactionEditor({
     else if (event.key === 'ArrowDown') dy = step
     else return
     event.preventDefault()
-    onChange(applyHandle(rect, event.altKey ? 'se' : 'move', dx, dy))
+    onChange(selectedRef.current, applyHandle(current, event.altKey ? 'se' : 'move', dx, dy))
   }
 
+  const areaLabel = `Area ${selected + 1} of ${rects.length}`
+
   return (
-    <div ref={wrapRef} className="flex min-h-64 w-full justify-center">
+    <div ref={wrapRef} className="grid w-full justify-items-center gap-2">
+      <div className="flex w-full flex-wrap items-center gap-2">
+        <Button type="button" size="sm" variant="secondary" onClick={onAdd}>
+          Add redaction area
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          disabled={!canRemove}
+          aria-describedby={canRemove ? undefined : 'keep-one-area'}
+          onClick={onRemove}
+        >
+          Remove selected
+        </Button>
+        <p className="text-[12px] text-fg-2">{areaLabel} selected</p>
+      </div>
+      {!canRemove && (
+        <p id="keep-one-area" className="w-full text-[12px] leading-relaxed text-fg-3">
+          At least one area stays, so a page is never left with nothing covered.
+        </p>
+      )}
       <div
         ref={frameRef}
         tabIndex={0}
         role="application"
-        aria-label="Area that will be removed. Arrow keys move it. Shift takes a larger step. Alt and the arrow keys resize it from the bottom-right corner."
+        aria-label={`${areaLabel}. Arrow keys move the selected area. Shift takes a larger step. Alt and the arrow keys resize it from the bottom-right corner.`}
         onKeyDown={onKeyDown}
         className="relative outline-none focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-4 focus-visible:outline-fg-3"
         style={box ? { width: box.width, height: box.height } : { width: '100%', minHeight: 280 }}
       >
         <canvas ref={canvasRef} className="block bg-white shadow-[var(--shadow)]" />
-        {box && (
-          <div
-            className="absolute touch-none border-2 border-[var(--accent)] bg-[var(--lilac-deep)]/45"
-            style={{
-              left: `${rect.x * 100}%`,
-              top: `${rect.y * 100}%`,
-              width: `${rect.width * 100}%`,
-              height: `${rect.height * 100}%`,
-            }}
-          >
-            <div
-              className="absolute inset-0 cursor-move"
-              onPointerDown={(event) => begin(event, 'move')}
-              onPointerMove={move}
-              onPointerUp={end}
-              onPointerCancel={end}
-            />
-            <span className="pointer-events-none absolute left-1 top-1 rounded bg-[var(--accent)] px-1.5 py-0.5 text-[10px] font-medium text-white">
-              Will be removed
-            </span>
-            {HANDLES.map((handle) => (
-              <button
-                key={handle.id}
-                type="button"
-                aria-label={handle.label}
-                className={`absolute z-10 size-8 rounded-full border border-[var(--accent)] bg-white shadow-[var(--shadow)] before:absolute before:inset-2.5 before:rounded-full before:bg-[var(--accent)] pointer-coarse:size-11 ${handle.className}`}
-                onPointerDown={(event) => begin(event, handle.id)}
-                onPointerMove={move}
-                onPointerUp={end}
-                onPointerCancel={end}
-              />
-            ))}
-          </div>
-        )}
+        {box &&
+          rects.map((rect, index) => {
+            const isSelected = index === selected
+            return (
+              <div
+                key={index}
+                className={`absolute touch-none border-2 ${isSelected ? 'z-20 border-[var(--accent)] bg-[var(--lilac-deep)]/45' : 'z-10 border-[var(--lilac-deep)] bg-[var(--lilac)]/30'}`}
+                style={{
+                  left: `${rect.x * 100}%`,
+                  top: `${rect.y * 100}%`,
+                  width: `${rect.width * 100}%`,
+                  height: `${rect.height * 100}%`,
+                }}
+              >
+                <div
+                  role="button"
+                  tabIndex={-1}
+                  aria-label={`Redaction area ${index + 1}${isSelected ? ', selected' : ''}`}
+                  aria-pressed={isSelected}
+                  className={`absolute inset-0 ${isSelected ? 'cursor-move' : 'cursor-pointer'}`}
+                  onPointerDown={(event) => begin(event, 'move', index)}
+                  onPointerMove={move}
+                  onPointerUp={end}
+                  onPointerCancel={end}
+                />
+                <span
+                  className={`pointer-events-none absolute left-1 top-1 max-w-[calc(100%-0.5rem)] truncate rounded px-1.5 py-0.5 text-[10px] font-medium text-white ${isSelected ? 'bg-[var(--accent)]' : 'bg-[var(--fg-3)]'}`}
+                >
+                  {isSelected ? `Area ${index + 1} · Will be removed` : `Area ${index + 1}`}
+                </span>
+                {isSelected &&
+                  HANDLES.map((handle) => (
+                    <button
+                      key={handle.id}
+                      type="button"
+                      aria-label={handle.label}
+                      className={`absolute z-10 size-8 rounded-full border border-[var(--accent)] bg-white shadow-[var(--shadow)] before:absolute before:inset-2.5 before:rounded-full before:bg-[var(--accent)] pointer-coarse:size-11 ${handle.className}`}
+                      onPointerDown={(event) => begin(event, handle.id, index)}
+                      onPointerMove={move}
+                      onPointerUp={end}
+                      onPointerCancel={end}
+                    />
+                  ))}
+              </div>
+            )
+          })}
         {rendering && (
           <div className="absolute inset-0 grid place-items-center bg-page/70">
             <Spinner label="Drawing the page" />

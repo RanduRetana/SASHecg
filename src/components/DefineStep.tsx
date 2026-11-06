@@ -22,10 +22,10 @@ export function DefineStep({ session }: { session: Session }) {
   return (
     <section className="grid gap-4">
       <header className="grid gap-1">
-        <h1 className="text-xl font-medium tracking-[-0.03em]">Mark the upper-left corner</h1>
+        <h1 className="text-xl font-medium tracking-[-0.03em]">Mark what will be removed</h1>
         <p className="max-w-2xl text-[13.5px] leading-relaxed text-fg-2">
-          The starting rectangle covers the identifier block. Fit it to your template. Only that zone is covered: the
-          trace and the rest of the page stay.
+          The starting rectangle covers the identifier block. Add another area when details sit somewhere else. Only
+          those zones are covered: the trace and the rest of the page stay.
         </p>
       </header>
 
@@ -37,15 +37,20 @@ export function DefineStep({ session }: { session: Session }) {
               pageIndex={page.localIndex}
               widthPt={page.widthPt}
               heightPt={page.heightPt}
-              rect={rect}
-              onChange={session.updateRect}
+              rects={session.activeRects}
+              selected={session.selectedIndex}
+              onSelect={session.selectRect}
+              onChange={(index, next) => session.updateRectAt(index, next)}
+              onAdd={session.addRedaction}
+              onRemove={session.removeRedaction}
+              canRemove={session.canRemoveRect}
             />
           ) : (
             <div className="grid min-h-64 place-items-center text-[13px] text-fg-2">Opening this page…</div>
           )}
           <p className="mt-2 text-[12px] leading-relaxed text-fg-3">
-            The purple mask is a guide. When you process, that zone is painted with an opaque rectangle on a picture of
-            the page. The original text is not left underneath.
+            The purple masks are a guide. When you process, every area is painted with an opaque rectangle on a picture
+            of the page. The original text is not left underneath.
           </p>
         </div>
 
@@ -53,7 +58,7 @@ export function DefineStep({ session }: { session: Session }) {
           <SegmentedControl
             value={session.scope}
             onValueChange={(value) => session.setScope(value === 'pages' ? 'pages' : 'all')}
-            aria-label="Where the area applies"
+            aria-label="Where the areas apply"
             fill
           >
             <SegmentedControlItem value="all">All pages</SegmentedControlItem>
@@ -63,12 +68,13 @@ export function DefineStep({ session }: { session: Session }) {
           {session.scope === 'pages' ? (
             <Callout tone="warning" size="sm" title="These pages only">
               {session.targets.length > 1
-                ? `Moving the rectangle gives the same area to all ${session.targets.length} selected pages.`
-                : `Page ${session.editorPage + 1} will use its own area. The others keep the shared area.`}
+                ? `Changes store the same set of areas on all ${session.targets.length} selected pages.`
+                : `Page ${session.editorPage + 1} will use its own set of areas. The others keep the shared set.`}
             </Callout>
           ) : (
-            <Callout tone="info" size="sm" title="Same fraction on every page">
-              A width of 0.30 is 30% of that page, even if the paper size changes.
+            <Callout tone="info" size="sm" title="Same fractions on every page">
+              A width of 0.30 is 30% of that page, even if the paper size changes. Every area is shared unless a page
+              has an exception.
             </Callout>
           )}
 
@@ -97,6 +103,27 @@ export function DefineStep({ session }: { session: Session }) {
             </IconButton>
           </div>
 
+          <div role="group" aria-label="Redaction areas" className="grid gap-1">
+            {session.activeRects.map((area, index) => {
+              const isSelected = index === session.selectedIndex
+              return (
+                <button
+                  key={index}
+                  type="button"
+                  aria-pressed={isSelected}
+                  aria-label={`Select area ${index + 1}`}
+                  className={`flex items-center justify-between gap-2 rounded-md border px-2 py-1.5 text-left text-[12px] outline-none focus-visible:outline focus-visible:outline-1 focus-visible:outline-fg-3 ${isSelected ? 'border-[var(--accent)] bg-[var(--blush)] text-fg' : 'border-line bg-raised text-fg-2'}`}
+                  onClick={() => session.selectRect(index)}
+                >
+                  <span className="font-medium">Area {index + 1}</span>
+                  <span className="tabular-nums">
+                    {area.x.toFixed(2)}, {area.y.toFixed(2)}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+
           <div className="grid grid-cols-2 gap-2">
             <NumberField label="X" size="sm" min={0} max={1} step={0.001} locale="en" format={numberFormat} scrubSensitivity={12} value={rect.x} onValueChange={(value) => patch(session, 'x', value)} />
             <NumberField label="Y" size="sm" min={0} max={1} step={0.001} locale="en" format={numberFormat} scrubSensitivity={12} value={rect.y} onValueChange={(value) => patch(session, 'y', value)} />
@@ -104,13 +131,14 @@ export function DefineStep({ session }: { session: Session }) {
             <NumberField label="Height" size="sm" min={0.02} max={1} step={0.001} locale="en" format={numberFormat} scrubSensitivity={12} value={rect.height} onValueChange={(value) => patch(session, 'height', value)} />
           </div>
           <p className="text-[12px] leading-relaxed text-fg-3">
-            Origin is the top left. This covers about {coverage.toLocaleString('en')}% of the page. Arrow keys move it;
-            Shift takes a larger step; Alt and the arrows resize it.
+            Editing area {session.selectedIndex + 1}. Origin is the top left. This area covers about{' '}
+            {coverage.toLocaleString('en')}% of the page. Arrow keys move it; Shift takes a larger step; Alt and the
+            arrows resize it.
           </p>
 
           {doc.mixed && (
             <Callout tone="warning" size="sm" title="Pages differ">
-              Some pages have another size or rotation. Check the thumbnails: the area is a fraction of each page, not
+              Some pages have another size or rotation. Check the thumbnails: each area is a fraction of that page, not
               a fixed measurement.
             </Callout>
           )}
@@ -121,7 +149,7 @@ export function DefineStep({ session }: { session: Session }) {
             </Button>
           )}
 
-          <Button type="button" variant="secondary" onClick={() => session.updateRect({ x: 0, y: 0, width: 0.3, height: 0.155 })}>
+          <Button type="button" variant="secondary" onClick={() => session.restoreStarting()}>
             Restore the starting corner
           </Button>
         </div>

@@ -70,7 +70,7 @@ export function ReviewStep({ session }: { session: Session }) {
             </Button>
           }
         >
-          The thumbnails no longer match the current rectangle.
+          The thumbnails no longer match the current areas.
         </Callout>
       )}
 
@@ -171,12 +171,18 @@ export function ReviewStep({ session }: { session: Session }) {
                 <dd className="text-right">{formatMillimeters(current.widthPt, current.heightPt)}</dd>
                 <dt className="text-fg-3">Resolution</dt>
                 <dd className="text-right">{formatDpi(current.dpi)}</dd>
-                <dt className="text-fg-3">Area</dt>
-                <dd className="text-right tabular-nums">
-                  {current.rect.x.toFixed(3)}, {current.rect.y.toFixed(3)}
-                </dd>
+                <dt className="text-fg-3">Areas</dt>
+                <dd className="text-right tabular-nums">{current.rects.length}</dd>
+                {current.rects.map((rect, index) => (
+                  <span key={index} className="contents">
+                    <dt className="text-fg-3">Area {index + 1}</dt>
+                    <dd className="text-right tabular-nums">
+                      {rect.x.toFixed(3)}, {rect.y.toFixed(3)}
+                    </dd>
+                  </span>
+                ))}
               </dl>
-              {current.exception ? <Badge tone="warning">Exception</Badge> : <Badge tone="info">Shared area</Badge>}
+              {current.exception ? <Badge tone="warning">Exception</Badge> : <Badge tone="info">Shared areas</Badge>}
             </>
           ) : (
             <p className="text-[13px] leading-relaxed text-fg-2">This page does not have an anonymized image yet.</p>
