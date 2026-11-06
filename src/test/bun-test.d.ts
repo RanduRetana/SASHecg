@@ -1,5 +1,5 @@
 declare const Bun: {
-  file(path: string): { arrayBuffer(): Promise<ArrayBuffer> }
+  file(path: string): { arrayBuffer(): Promise<ArrayBuffer>; text(): Promise<string> }
 }
 
 declare module 'bun:test' {

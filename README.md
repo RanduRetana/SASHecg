@@ -68,6 +68,22 @@ If a page at 220 dpi would exceed 8 megapixels, or the browser reports memory pr
 - Output PDFs are new documents and do not copy the source metadata.
 - The thumbnail grid shows the anonymized image, not the original file.
 
+## Direct links after deployment
+
+`/fishy-stew` is chosen in the browser. It is not a file in `dist/`. `bun run dev` and `bun run preview` are Vite SPA servers, so they return `index.html` for that path and the page still loads.
+
+A static host does not do that on its own. Opening `https://your-host/fishy-stew` asks for a file named `fishy-stew`. If the host has no fallback, it responds 404 before the app can read the path.
+
+`vercel.json` tells Vercel to rewrite any path that is not a real file to `/index.html`:
+
+```json
+{ "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }] }
+```
+
+Vercel checks the deployed files first, so `/assets/*`, `/fishy/fishy.gif`, and `/fishy/stew.gif` are still served as themselves. Only missing paths, including `/fishy-stew`, receive the app.
+
+On another static host, use the same rule: existing files stay files, and every other path returns `index.html`. Do not replace real assets with `index.html`.
+
 ## Copy the project to your Mac and GitHub
 
 This project was prepared remotely. No GitHub or Origin repository was created or published. Once the folder is at `~/Documents/breakaway/sash-ecg`:
