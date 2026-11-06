@@ -22,8 +22,8 @@ export function UploadStep({ session }: { session: Session }) {
       <header className="grid gap-1">
         <h1 className="text-xl font-medium tracking-[-0.03em]">Upload a report</h1>
         <p className="max-w-2xl text-[13.5px] leading-relaxed text-fg-2">
-          One multi-page PDF, the kind that arrives together from the electrocardiograph. Patient details usually sit
-          in the same corner of every page.
+          Upload a multi-page PDF, set the redaction area once, review the pages, and download a ZIP of individual
+          anonymized PDFs.
         </p>
       </header>
 
