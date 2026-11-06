@@ -14,7 +14,7 @@ const numberFormat = { minimumFractionDigits: 3, maximumFractionDigits: 3 } as c
 export function DefineStep({ session }: { session: Session }) {
   const doc = session.doc
   const page = doc?.pages[session.editorPage]
-  if (!doc || !session.pdf || !page) return null
+  if (!doc || !page) return null
 
   const rect = session.activeRect
   const coverage = Math.round(rect.width * rect.height * 1000) / 10
@@ -31,14 +31,18 @@ export function DefineStep({ session }: { session: Session }) {
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="rounded-xl border border-line bg-frame p-3 shadow-[var(--shadow)]">
-          <RedactionEditor
-            pdf={session.pdf}
-            pageIndex={session.editorPage}
-            widthPt={page.widthPt}
-            heightPt={page.heightPt}
-            rect={rect}
-            onChange={session.updateRect}
-          />
+          {session.pdf ? (
+            <RedactionEditor
+              pdf={session.pdf}
+              pageIndex={page.localIndex}
+              widthPt={page.widthPt}
+              heightPt={page.heightPt}
+              rect={rect}
+              onChange={session.updateRect}
+            />
+          ) : (
+            <div className="grid min-h-64 place-items-center text-[13px] text-fg-2">Opening this page…</div>
+          )}
           <p className="mt-2 text-[12px] leading-relaxed text-fg-3">
             The purple mask is a guide. When you process, that zone is painted with an opaque rectangle on a picture of
             the page. The original text is not left underneath.
@@ -79,6 +83,7 @@ export function DefineStep({ session }: { session: Session }) {
             </IconButton>
             <p className="text-center text-[13px] tabular-nums">
               Page {session.editorPage + 1} of {doc.pageCount}
+              {doc.fileCount > 1 ? ` · ${page.sourceName}` : ''}
             </p>
             <IconButton
               label="Next page"
@@ -127,7 +132,7 @@ export function DefineStep({ session }: { session: Session }) {
           <ProgressBar
             value={session.progress.total ? (session.progress.done / session.progress.total) * 100 : 0}
             label="Processing in this browser"
-            description={`Page ${Math.min(session.progress.done + 1, session.progress.total)} of ${session.progress.total}${session.progress.dpi ? ` · ${formatDpi(session.progress.dpi)}` : ''}`}
+            description={`Page ${Math.min(session.progress.done + 1, session.progress.total)} of ${session.progress.total}${session.progress.label ? ` · ${session.progress.label}` : ''}${session.progress.dpi ? ` · ${formatDpi(session.progress.dpi)}` : ''}`}
           />
           <Button type="button" variant="danger" onClick={() => session.cancel()}>
             Cancel

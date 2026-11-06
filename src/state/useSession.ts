@@ -1,5 +1,6 @@
-import { useMemo, useRef, useState } from 'react'
-import { anonymizeDocument, type ProcessedPage, type ProcessProgress } from '@/core/anonymize'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { type ProcessedPage, type ProcessProgress } from '@/core/anonymize'
+import { anonymizeBatch } from '@/core/batch'
 import { createBrowserCanvas } from '@/core/browserCanvas'
 import { downloadBytes } from '@/core/download'
 import { createExportLock } from '@/core/exportLock'
@@ -10,7 +11,7 @@ import {
   roundRect,
   type NormalizedRect,
 } from '@/core/geometry'
-import { zipFileName } from '@/core/naming'
+import { batchZipName, planOutputNames } from '@/core/naming'
 import { openPdf, pagesDiffer, PdfOpenError, readPageInfos, type OpenedPdf, type PageInfo } from '@/core/pdfDocument'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
 import { createSamplePdf } from '@/core/samplePdf'
@@ -20,13 +21,31 @@ import { buildZip } from '@/core/zip'
 export type Stage = 0 | 1 | 2 | 3
 export type Scope = 'all' | 'pages'
 
+export type BatchPage = PageInfo & {
+  localIndex: number
+  fileId: number
+  sourceName: string
+  outputName: string
+}
+
+export type SkippedFile = { name: string; message: string }
+
 export type DocumentInfo = {
   name: string
   size: number
   pageCount: number
-  pages: PageInfo[]
+  fileCount: number
+  pages: BatchPage[]
   mixed: boolean
+  skipped: SkippedFile[]
+  disambiguated: boolean
 }
+
+const MAX_FILES = 1000
+const MAX_FILE_BYTES = 512 * 1024 * 1024
+
+type SourceRecord = { id: number; file: File; name: string }
+type LoadedSource = { source: SourceRecord; pages: PageInfo[] }
 
 export type PreviewPage = {
   index: number
@@ -75,6 +94,11 @@ function revoke(slots: Slot[]) {
 
 export function useSession() {
   const openedRef = useRef<OpenedPdf | null>(null)
+  const openFileId = useRef(-1)
+  const recordsRef = useRef<LoadedSource[]>([])
+  const nextSourceId = useRef(1)
+  const lockedQueue = useRef<File[]>([])
+  const pendingSkipped = useRef<SkippedFile[]>([])
   const pendingFile = useRef<File | null>(null)
   const abortRef = useRef<AbortController | null>(null)
   const running = useRef<Promise<void> | null>(null)
@@ -88,6 +112,8 @@ export function useSession() {
   const [passwordNeeded, setPasswordNeeded] = useState(false)
   const [passwordError, setPasswordError] = useState<string | null>(null)
   const [password, setPassword] = useState('')
+  const [passwordFor, setPasswordFor] = useState<string | null>(null)
+  const [loadProgress, setLoadProgress] = useState<{ done: number; total: number; name: string } | null>(null)
   const [defaultRect, setDefaultRect] = useState<NormalizedRect>(DEFAULT_REDACTION)
   const [overrides, setOverrides] = useState<Record<number, NormalizedRect>>({})
   const [scope, setScope] = useState<Scope>('all')
@@ -138,48 +164,151 @@ export function useSession() {
     await running.current
   }
 
-  async function replaceDocument(file: File, passwordValue?: string) {
-    const bytes = new Uint8Array(await file.arrayBuffer())
-    const opened = await openPdf(bytes, passwordValue)
-    const pages = await readPageInfos(opened.pdf)
-    if (pages.length === 0) {
-      await opened.destroy()
-      throw new PdfOpenError('invalid', 'The PDF has no pages.')
-    }
-    await settleRunning()
-    const previous = openedRef.current
-    openedRef.current = opened
-    setPdf(opened.pdf)
-    if (previous) queueMicrotask(() => void previous.destroy())
-    setSlots((current) => {
-      revoke(current)
-      return Array.from({ length: pages.length }, () => null)
+  function describeBatch(records: LoadedSource[], skipped: SkippedFile[]): DocumentInfo {
+    const plan = planOutputNames(records.map((record) => ({ name: record.source.name, pageCount: record.pages.length })))
+    const pages: BatchPage[] = []
+    records.forEach((record, fileIndex) => {
+      record.pages.forEach((page, localIndex) => {
+        pages.push({
+          index: pages.length,
+          localIndex,
+          fileId: record.source.id,
+          sourceName: record.source.name,
+          outputName: plan[fileIndex]?.names[localIndex] ?? `report-ecg-${pages.length + 1}.pdf`,
+          widthPt: page.widthPt,
+          heightPt: page.heightPt,
+          rotation: page.rotation,
+        })
+      })
     })
-    setDoc({
-      name: file.name,
-      size: file.size,
+    const fileCount = records.length
+    return {
+      name: fileCount === 1 ? (records[0]?.source.name ?? 'report.pdf') : `${fileCount} PDFs`,
+      size: records.reduce((sum, record) => sum + record.source.file.size, 0),
       pageCount: pages.length,
+      fileCount,
       pages,
       mixed: pagesDiffer(pages),
+      skipped,
+      disambiguated: plan.some((file) => file.disambiguated),
+    }
+  }
+
+  async function releasePreview() {
+    const previous = openedRef.current
+    openedRef.current = null
+    openFileId.current = -1
+    setPdf(null)
+    if (previous) void previous.destroy()
+  }
+
+  async function commitRecords(records: LoadedSource[], skipped: SkippedFile[], mode: 'replace' | 'append') {
+    await settleRunning()
+    await releasePreview()
+    const next = mode === 'append' ? [...recordsRef.current, ...records] : records
+    recordsRef.current = next
+    const info = describeBatch(next, skipped)
+    setSlots((current) => {
+      revoke(current)
+      return Array.from({ length: info.pageCount }, () => null)
     })
-    setDefaultRect(DEFAULT_REDACTION)
-    setOverrides({})
+    setDoc(info)
     setFailures([])
     setCancelled(false)
     setHasRun(false)
-    setSelection([])
-    setScope('all')
-    setEditorPage(0)
-    setActive(0)
-    setPassword('')
-    setPasswordNeeded(false)
-    setPasswordError(null)
-    setFileError(null)
     setExportError(null)
     setExportName(null)
     setProgress(null)
-    pendingFile.current = null
+    setFileError(null)
+    if (mode === 'replace') {
+      setDefaultRect(DEFAULT_REDACTION)
+      setOverrides({})
+      setSelection([])
+      setScope('all')
+      setEditorPage(0)
+      setActive(0)
+    }
     setStage(1)
+  }
+
+  async function scanFile(file: File, passwordValue?: string): Promise<LoadedSource> {
+    const bytes = new Uint8Array(await file.arrayBuffer())
+    const opened = await openPdf(bytes, passwordValue)
+    try {
+      const pages = await readPageInfos(opened.pdf)
+      if (pages.length === 0) throw new PdfOpenError('invalid', 'The PDF has no pages.')
+      const source = { id: nextSourceId.current++, file, name: file.name || 'report.pdf' }
+      return { source, pages }
+    } finally {
+      await opened.destroy()
+    }
+  }
+
+  async function loadFiles(incoming: File[]) {
+    const files = incoming.slice(0, MAX_FILES)
+    setFileError(null)
+    setLoading(true)
+    setPasswordError(null)
+    const accepted: LoadedSource[] = []
+    const skipped: SkippedFile[] = []
+    if (incoming.length > MAX_FILES) {
+      skipped.push({ name: 'Extra files', message: `Only the first ${MAX_FILES} PDFs were kept.` })
+    }
+    const locked: File[] = []
+    try {
+      for (let index = 0; index < files.length; index++) {
+        const file = files[index]
+        if (!file) continue
+        setLoadProgress({ done: index, total: files.length, name: file.name || 'PDF' })
+        if (!isPdf(file)) {
+          skipped.push({ name: file.name || 'Untitled', message: 'Not a PDF.' })
+          continue
+        }
+        if (file.size === 0) {
+          skipped.push({ name: file.name, message: 'The file is empty.' })
+          continue
+        }
+        if (file.size > MAX_FILE_BYTES) {
+          skipped.push({ name: file.name, message: 'The file is over 512 MB.' })
+          continue
+        }
+        try {
+          accepted.push(await scanFile(file))
+        } catch (error) {
+          if (error instanceof PdfOpenError && (error.kind === 'password' || error.kind === 'invalid-password')) {
+            locked.push(file)
+          } else if (error instanceof PdfOpenError) {
+            skipped.push({ name: file.name, message: error.message })
+          } else {
+            skipped.push({ name: file.name, message: 'Could not open the file.' })
+          }
+        }
+        await new Promise((resolve) => setTimeout(resolve, 0))
+      }
+      if (accepted.length === 0 && locked.length === 0) {
+        setFileError(skipped[0] ? `${skipped[0].name}: ${skipped[0].message}` : 'No PDF could be opened.')
+        setPasswordNeeded(false)
+        return
+      }
+      if (accepted.length > 0) await commitRecords(accepted, skipped, 'replace')
+      else pendingSkipped.current = skipped
+      lockedQueue.current = locked
+      const nextLocked = locked[0]
+      if (nextLocked) {
+        pendingFile.current = nextLocked
+        setPasswordFor(nextLocked.name)
+        setPasswordNeeded(true)
+        setPassword('')
+        setPasswordError(null)
+      } else {
+        pendingFile.current = null
+        setPasswordFor(null)
+        setPasswordNeeded(false)
+      }
+    } finally {
+      setLoading(false)
+      setLoadProgress(null)
+    }
   }
 
   function reportFileError(message: string) {
@@ -188,39 +317,40 @@ export function useSession() {
     setPasswordError(null)
   }
 
-  async function loadFile(file: File, passwordValue?: string) {
-    if (!isPdf(file)) {
-      setFileError('Choose a PDF file.')
-      setPasswordNeeded(false)
-      return
-    }
-    setLoading(true)
-    setFileError(null)
-    setPasswordError(null)
-    try {
-      await replaceDocument(file, passwordValue)
-    } catch (error) {
-      if (error instanceof PdfOpenError && (error.kind === 'password' || error.kind === 'invalid-password')) {
-        pendingFile.current = file
-        setPasswordNeeded(true)
-        setPasswordError(error.kind === 'invalid-password' ? error.message : null)
-        setFileError(null)
-      } else if (error instanceof PdfOpenError) {
-        setFileError(error.message)
-        setPasswordNeeded(false)
-      } else {
-        setFileError('Could not open the file.')
-        setPasswordNeeded(false)
-      }
-    } finally {
-      setLoading(false)
-    }
+  async function loadFile(file: File) {
+    await loadFiles([file])
   }
 
   async function submitPassword() {
     const file = pendingFile.current
     if (!file) return
-    await loadFile(file, password)
+    setLoading(true)
+    setPasswordError(null)
+    try {
+      const loaded = await scanFile(file, password)
+      const rest = lockedQueue.current.filter((item) => item !== file)
+      lockedQueue.current = rest
+      const skipped = recordsRef.current.length === 0 ? pendingSkipped.current : (doc?.skipped ?? [])
+      await commitRecords([loaded], skipped, recordsRef.current.length === 0 ? 'replace' : 'append')
+      pendingSkipped.current = []
+      setPassword('')
+      const nextLocked = rest[0]
+      if (nextLocked) {
+        pendingFile.current = nextLocked
+        setPasswordFor(nextLocked.name)
+        setPasswordNeeded(true)
+      } else {
+        pendingFile.current = null
+        setPasswordFor(null)
+        setPasswordNeeded(false)
+      }
+    } catch (error) {
+      if (error instanceof PdfOpenError && error.kind === 'invalid-password') setPasswordError(error.message)
+      else if (error instanceof PdfOpenError) setPasswordError(error.message)
+      else setFileError('Could not open the file.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function loadSample() {
@@ -229,8 +359,8 @@ export function useSession() {
     try {
       const bytes = await createSamplePdf()
       const copy = new Uint8Array(bytes)
-      const file = new File([copy.buffer], 'ejemplo-sintetico.pdf', { type: 'application/pdf' })
-      await replaceDocument(file)
+      const file = new File([copy.buffer], 'sample.pdf', { type: 'application/pdf' })
+      await loadFiles([file])
     } catch {
       setFileError('Could not create the sample PDF.')
     } finally {
@@ -270,30 +400,48 @@ export function useSession() {
   }
 
   async function process(indices?: number[]) {
-    const opened = openedRef.current
-    if (!opened || !doc || processing) return
+    if (!doc || processing) return
+    const wanted = new Set(indices ?? doc.pages.map((page) => page.index))
+    const grouped = new Map<number, BatchPage[]>()
+    for (const page of doc.pages) {
+      if (!wanted.has(page.index)) continue
+      const list = grouped.get(page.fileId) ?? []
+      list.push(page)
+      grouped.set(page.fileId, list)
+    }
+    const inputs = [...grouped.entries()].flatMap(([fileId, pages]) => {
+      const record = recordsRef.current.find((item) => item.source.id === fileId)
+      if (!record) return []
+      return [{
+        load: async () => new Uint8Array(await record.source.file.arrayBuffer()),
+        pages: pages.map((page) => ({
+          localIndex: page.localIndex,
+          globalIndex: page.index,
+          filename: page.outputName,
+        })),
+      }]
+    })
     const controller = new AbortController()
     abortRef.current = controller
     setProcessing(true)
     setCancelled(false)
     setExportName(null)
     setExportError(null)
-    setProgress({ done: 0, total: indices?.length ?? doc.pageCount, pageIndex: indices?.[0] ?? 0, dpi: 0 })
+    setProgress({ done: 0, total: wanted.size, pageIndex: indices?.[0] ?? 0, dpi: 0 })
 
     const job = (async () => {
       let result
       try {
-        result = await anonymizeDocument(opened.pdf, {
-        pageCount: doc.pageCount,
-        defaultRect,
-        overrides,
-        ...(indices ? { indices } : {}),
-        signal: controller.signal,
-        canvasFactory: createBrowserCanvas,
-        previews: true,
-        memoryPressure: browserMemoryPressure,
-        onProgress: setProgress,
-      })
+        result = await anonymizeBatch(inputs, {
+          defaultRect,
+          overrides,
+          signal: controller.signal,
+          canvasFactory: createBrowserCanvas,
+          previews: true,
+          memoryPressure: browserMemoryPressure,
+          labelFor: (globalIndex) => doc.pages[globalIndex]?.sourceName,
+          onProgress: setProgress,
+        })
       } catch {
         setFileError('Processing stopped because of an unexpected error.')
         setHasRun(true)
@@ -342,7 +490,7 @@ export function useSession() {
       try {
         const files = slots.flatMap((slot) => (slot ? [{ name: slot.filename, data: slot.pdfBytes }] : []))
         const zip = await buildZip(files)
-        const filename = zipFileName(doc.name)
+        const filename = batchZipName(recordsRef.current.map((record) => record.source.name))
         downloadBytes(zip, filename, 'application/zip')
         return filename
       } catch {
@@ -362,6 +510,12 @@ export function useSession() {
     setPdf(null)
     if (previous) queueMicrotask(() => void previous.destroy())
     pendingFile.current = null
+    recordsRef.current = []
+    lockedQueue.current = []
+    pendingSkipped.current = []
+    openFileId.current = -1
+    setPasswordFor(null)
+    setLoadProgress(null)
     setSlots((current) => {
       revoke(current)
       return []
@@ -431,6 +585,36 @@ export function useSession() {
     setSelection((current) => (current.includes(index) ? current.filter((page) => page !== index) : [...current, index]))
   }
 
+  useEffect(() => {
+    const page = doc?.pages[editorPage]
+    if (!page) return
+    if (openFileId.current === page.fileId && openedRef.current) return
+    const record = recordsRef.current.find((item) => item.source.id === page.fileId)
+    if (!record) return
+    const token = { cancelled: false }
+    void (async () => {
+      try {
+        const bytes = new Uint8Array(await record.source.file.arrayBuffer())
+        if (token.cancelled) return
+        const opened = await openPdf(bytes)
+        if (token.cancelled) {
+          await opened.destroy()
+          return
+        }
+        const previous = openedRef.current
+        openedRef.current = opened
+        openFileId.current = page.fileId
+        setPdf(opened.pdf)
+        if (previous && previous !== opened) void previous.destroy()
+      } catch {
+        if (!token.cancelled) setFileError('Could not open this page for preview.')
+      }
+    })()
+    return () => {
+      token.cancelled = true
+    }
+  }, [doc, editorPage])
+
   const warnings = slots.flatMap((slot) => (slot?.warning ? [slot.warning] : []))
 
   return {
@@ -446,7 +630,10 @@ export function useSession() {
     password,
     setPassword,
     loadFile,
+    loadFiles,
     reportFileError,
+    passwordFor,
+    loadProgress,
     submitPassword,
     loadSample,
     defaultRect,
