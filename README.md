@@ -34,7 +34,7 @@ bun test
 
 ## Workflow
 
-1. **Upload.** Choose one PDF or drop many. If a file is protected, the password is requested on the page. You can also create a three-page synthetic PDF, with no real data, to practice.
+1. **Upload.** Choose one PDF or drop many. If a file is protected, the password is requested on the page. You can also create a four-page synthetic PDF, with no real data, to practice.
 2. **Define area.** The starting rectangle covers the upper left (30% of the width and 15.5% of the height). Drag it, use the handles, or type X, Y, width, and height as fractions from 0 to 1. The origin is the top-left of the page as it is displayed. “All pages” applies the same fraction to every sheet. “Exception” stores a different area for the visible page or for the pages you selected.
 3. **Review.** Processing builds anonymized thumbnails. Select pages, adjust an exception, and reprocess only those. Shift-click selects a range.
 4. **Export.** Each page is named from its source file, for example `report-ecg-001.pdf`. One file downloads as `report-anonymized.zip`. Several files download together as `sash-ecg-anonymized.zip`. A second click does not start another download.
