@@ -1,11 +1,13 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 
 type Phase = 'alive' | 'zap' | 'stew'
 
 export function FishyStew({ onBack }: { onBack: () => void }) {
   const [phase, setPhase] = useState<Phase>('alive')
+  const timer = useRef<number | null>(null)
   const reduce = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const revealed = phase !== 'alive'
 
   function kiss() {
     if (phase !== 'alive') return
@@ -14,7 +16,13 @@ export function FishyStew({ onBack }: { onBack: () => void }) {
       return
     }
     setPhase('zap')
-    window.setTimeout(() => setPhase('stew'), 420)
+    timer.current = window.setTimeout(() => setPhase('stew'), 420)
+  }
+
+  function retry() {
+    if (timer.current !== null) window.clearTimeout(timer.current)
+    timer.current = null
+    setPhase('alive')
   }
 
   return (
@@ -43,13 +51,23 @@ export function FishyStew({ onBack }: { onBack: () => void }) {
         <p className="max-w-sm text-[13px] leading-relaxed text-fg-2">One very confident fish. No clinical use whatsoever.</p>
       )}
       <div className="flex flex-wrap items-center justify-center gap-2">
-        {phase === 'alive' && (
-          <Button type="button" variant="primary" onClick={kiss}>
-            Kiss fishy
-          </Button>
-        )}
+        <Button
+          type="button"
+          variant="primary"
+          onClick={kiss}
+          aria-disabled={revealed || undefined}
+          aria-label={revealed ? 'Kiss, struck through. Kill fishy' : 'Kiss fishy'}
+        >
+          {revealed ? (
+            <>
+              <span className="line-through decoration-2 opacity-80">Kiss</span> <span className="font-semibold">Kill</span> fishy
+            </>
+          ) : (
+            'Kiss fishy'
+          )}
+        </Button>
         {phase === 'stew' && (
-          <Button type="button" variant="secondary" onClick={() => setPhase('alive')}>
+          <Button type="button" variant="secondary" onClick={retry}>
             Try again
           </Button>
         )}
@@ -77,6 +95,7 @@ export function FishyStew({ onBack }: { onBack: () => void }) {
         }
         @media (prefers-reduced-motion: reduce) {
           .fishy-flash { animation: none; opacity: 0; }
+          .line-through { text-decoration-thickness: 2px; }
         }
       `}</style>
     </main>
