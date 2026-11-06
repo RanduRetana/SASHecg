@@ -78,7 +78,7 @@ export async function anonymizeDocument(
         signal: options.signal,
       })
       const warning = flat.capped
-        ? `Página ${index + 1} rasterizada a ${Math.round(flat.dpi)} ppp para contener la memoria. El objetivo habitual es 200–300 ppp.`
+        ? `Page ${index + 1} was rasterized at ${Math.round(flat.dpi)} dpi to stay within memory. The usual target is 200–300 dpi.`
         : undefined
       pages.push({
         index,
@@ -105,7 +105,7 @@ export async function anonymizeDocument(
       }
       failures.push({
         index,
-        message: error instanceof Error ? error.message : 'No se pudo anonimizar la página.',
+        message: error instanceof Error ? error.message : 'Could not anonymize the page.',
       })
       options.onProgress?.({
         done: cursor + 1,

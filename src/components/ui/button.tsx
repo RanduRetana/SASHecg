@@ -22,7 +22,7 @@ const segment =
   "in-data-[slot=button-group]:rounded-none in-data-[slot=button-group]:border-0 in-data-[slot=button-group]:bg-transparent in-data-[slot=button-group]:shadow-none in-data-[slot=button-group]:hover:bg-transparent in-data-[slot=button-group]:data-popup-open:bg-transparent in-data-[slot=button-group]:active:scale-100 in-data-[slot=button-group]:focus-visible:-outline-offset-3 in-data-[slot=button-group]:focus-visible:rounded-[5px]";
 
 const variants: Record<ButtonVariant, string> = {
-  primary: "bg-fg text-frame shadow-[var(--shadow)] hover:bg-fg/90 data-popup-open:bg-fg/90",
+  primary: "bg-[var(--accent)] text-white shadow-[var(--shadow)] hover:bg-[var(--accent-hover)] data-popup-open:bg-[var(--accent-hover)]",
   secondary:
     "border border-line-2 bg-raised text-fg shadow-[var(--shadow)] hover:border-fg-4 hover:bg-hover data-popup-open:border-fg-4 data-popup-open:bg-hover " + segment,
   ghost: "text-fg-2 hover:bg-hover hover:text-fg data-popup-open:bg-hover data-popup-open:text-fg " + segment,

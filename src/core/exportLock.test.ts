@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test'
 import { createExportLock } from './exportLock'
 
-test('un segundo clic no vuelve a ejecutar la exportación', async () => {
+test('a second click does not run the export again', async () => {
   const lock = createExportLock()
   let runs = 0
   let release: (() => void) | undefined

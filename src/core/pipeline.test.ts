@@ -9,18 +9,18 @@ import { readZip, buildZip } from './zip'
 const canvasFactory: CanvasFactory = (width, height) =>
   createCanvas(Math.max(1, Math.ceil(width)), Math.max(1, Math.ceil(height))) as unknown as HTMLCanvasElement
 
-test('un PDF ilegible o vacío explica el fallo sin salir del dispositivo', async () => {
+test('an empty or unreadable PDF fails without leaving the device', async () => {
   await expect(openPdf(new Uint8Array())).rejects.toBeInstanceOf(PdfOpenError)
   try {
     await openPdf(new Uint8Array([1, 2, 3, 4, 5]))
-    throw new Error('debería haber fallado')
+    throw new Error('should have failed')
   } catch (error) {
     expect(error).toBeInstanceOf(PdfOpenError)
     expect((error as PdfOpenError).kind).toBe('invalid')
   }
 })
 
-test('la página aplanada no conserva texto ni metadatos y tapa los píxeles marcados', async () => {
+test('a flattened page drops the text and metadata and covers the marked pixels', async () => {
   const source = await makeMarkedPdf(1)
   const opened = await openPdf(source)
   expect(await extractText(opened.pdf, 1)).toContain('PHI-SECRETO-XYZ')
@@ -38,7 +38,7 @@ test('la página aplanada no conserva texto ni metadatos y tapa los píxeles mar
 
   const page = result.pages[0]
   expect(page?.filename).toBe('ecg-001.pdf')
-  if (!page) throw new Error('sin página')
+  if (!page) throw new Error('missing page')
   expect(new TextDecoder('latin1').decode(page.pdfBytes).includes('PHI-SECRETO-XYZ')).toBe(false)
   expect(new TextDecoder('latin1').decode(page.pdfBytes).includes('Dr Secreto')).toBe(false)
 
@@ -59,7 +59,7 @@ test('la página aplanada no conserva texto ni metadatos y tapa los píxeles mar
   await opened.destroy()
 })
 
-test('una excepción tapa otra zona y deja libre la esquina común', async () => {
+test('an exception covers a different zone and leaves the shared corner alone', async () => {
   const source = await makeMarkedPdf(2)
   const opened = await openPdf(source)
   const result = await anonymizeDocument(opened.pdf, {
@@ -85,7 +85,7 @@ test('una excepción tapa otra zona y deja libre la esquina común', async () =>
   await opened.destroy()
 })
 
-test('se puede cancelar y el ZIP no repite nombres', async () => {
+test('processing can be cancelled and the ZIP rejects duplicate names', async () => {
   const source = await makeMarkedPdf(6)
   const opened = await openPdf(source)
   const controller = new AbortController()
@@ -116,7 +116,7 @@ test('se puede cancelar y el ZIP no repite nombres', async () => {
   } catch (error) {
     duplicate = error instanceof Error ? error.message : ''
   }
-  expect(duplicate).toContain('repetido')
+  expect(duplicate).toContain('Duplicate')
   await opened.destroy()
 })
 

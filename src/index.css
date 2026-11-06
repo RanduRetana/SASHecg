@@ -6,12 +6,39 @@
 
 :root {
   --font-geist-sans: 'Geist Sans', ui-sans-serif, system-ui, sans-serif;
+  --accent: #5b21b6;
+  --accent-hover: #4c1d95;
+  --accent-soft: #ede9fe;
+  --tide: #0f766e;
 }
 
-/* A cooler paper tone on top of Stealth UI's light theme, for a quiet clinical page. */
+/* Aqua paper, teal ink, purple actions. Text tokens stay dark enough for AA on the light surfaces. */
 [data-theme='light'] {
-  --page: #eef3f1;
-  --frame: #f7fbf9;
-  --info: #1d6b62;
-  --info-soft: rgba(29, 107, 98, 0.1);
+  --page: #e7f6f5;
+  --frame: #f3fbfb;
+  --raised: #ffffff;
+  --hover: #dff3f1;
+  --line: #c5e4e1;
+  --line-2: #8fc9c3;
+  --fg: #072f36;
+  --fg-2: #164851;
+  --fg-3: #2c5d66;
+  --fg-4: #4a727a;
+  --info: #0f766e;
+  --info-soft: #d5f3ef;
+  --success: #0f766e;
+  --success-soft: #d5f3ef;
+  --warning: #92400e;
+  --warning-soft: #ffedd5;
+  --danger: #9f1239;
+  --danger-soft: #ffe4e6;
+  --shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset, 0 12px 32px -16px rgba(15, 80, 90, 0.28);
+  --overlay: rgba(7, 47, 54, 0.36);
+}
+
+html[data-theme='light'] body {
+  background:
+    radial-gradient(980px 420px at 100% -8%, rgba(91, 33, 182, 0.14), transparent 52%),
+    radial-gradient(820px 460px at -12% -18%, rgba(15, 118, 110, 0.2), transparent 56%),
+    var(--page);
 }

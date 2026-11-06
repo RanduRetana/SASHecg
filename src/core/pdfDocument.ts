@@ -30,7 +30,7 @@ export class PdfOpenError extends Error {
 
 export async function openPdf(data: Uint8Array, password?: string): Promise<OpenedPdf> {
   if (data.byteLength === 0) {
-    throw new PdfOpenError('empty', 'El archivo está vacío.')
+    throw new PdfOpenError('empty', 'The file is empty.')
   }
 
   const task = getDocument({
@@ -98,16 +98,16 @@ function toPdfOpenError(error: unknown): PdfOpenError {
     if (code === PasswordResponses.INCORRECT_PASSWORD) {
       return new PdfOpenError(
         'invalid-password',
-        'La contraseña no abre este PDF. Se usa solo en este navegador y no se guarda.',
+        'That password does not open this PDF. It stays in this browser and is not saved.',
       )
     }
     return new PdfOpenError(
       'password',
-      'Este PDF está protegido. La contraseña se usa solo en este navegador y no se guarda.',
+      'This PDF is protected. The password is used only in this browser and is not saved.',
     )
   }
   if (error instanceof InvalidPDFException || name === 'InvalidPDFException' || name === 'UnknownErrorException') {
-    return new PdfOpenError('invalid', 'No se pudo leer el PDF. Puede estar dañado o no ser un PDF.')
+    return new PdfOpenError('invalid', 'Could not read the PDF. It may be damaged or not a PDF.')
   }
-  return new PdfOpenError('invalid', 'No se pudo abrir el documento.')
+  return new PdfOpenError('invalid', 'Could not open the document.')
 }

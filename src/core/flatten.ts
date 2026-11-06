@@ -8,7 +8,7 @@ export type CanvasFactory = (width: number, height: number) => HTMLCanvasElement
 
 export class ProcessCancelled extends Error {
   constructor() {
-    super('Proceso cancelado')
+    super('Processing cancelled')
     this.name = 'ProcessCancelled'
   }
 }
@@ -26,7 +26,7 @@ export async function imageToSinglePagePdf(png: Uint8Array, widthPt: number, hei
   const doc = await PDFDocument.create()
   doc.setTitle('SASHecg')
   doc.setAuthor('')
-  doc.setSubject('Página anonimizada localmente')
+  doc.setSubject('Page anonymized locally')
   doc.setKeywords([])
   doc.setProducer('SASHecg')
   doc.setCreator('SASHecg')
@@ -63,7 +63,7 @@ export async function flattenPage(options: {
     const height = Math.max(1, Math.ceil(viewport.height))
     canvas = options.canvasFactory(width, height)
     const ctx = canvas.getContext('2d')
-    if (!ctx) throw new Error('No se pudo preparar el lienzo de la página.')
+    if (!ctx) throw new Error('Could not prepare the page canvas.')
     ctx.fillStyle = '#ffffff'
     ctx.fillRect(0, 0, width, height)
 
@@ -120,7 +120,7 @@ export async function encodePreview(
   const thumb = factory(width, height)
   try {
     const ctx = thumb.getContext('2d')
-    if (!ctx) throw new Error('No se pudo preparar la miniatura.')
+    if (!ctx) throw new Error('Could not prepare the thumbnail.')
     ctx.fillStyle = '#ffffff'
     ctx.fillRect(0, 0, width, height)
     ctx.drawImage(source, 0, 0, width, height)
@@ -140,7 +140,7 @@ function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality?: number)
     canvas.toBlob(
       (blob) => {
         if (blob) resolve(blob)
-        else reject(new Error('No se pudo codificar la imagen de la página.'))
+        else reject(new Error('Could not encode the page image.'))
       },
       type,
       quality,

@@ -13,6 +13,6 @@ export function zipFileName(originalName: string): string {
     .replace(/[^\p{L}\p{N}._-]+/gu, '-')
     .replace(/-+/g, '-')
     .replace(/^[-.]+|[-.]+$/g, '')
-  const base = cleaned || 'informe'
-  return `${base}-anonimizado.zip`
+  const base = cleaned || 'report'
+  return `${base}-anonymized.zip`
 }

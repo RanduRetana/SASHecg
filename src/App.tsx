@@ -16,29 +16,29 @@ export default function App() {
 
   return (
     <IconButtonProvider>
-      <div className="min-h-dvh bg-page text-fg">
-        <header className="border-b border-line">
+      <div className="min-h-dvh text-fg">
+        <header className="border-b border-line bg-frame/80 backdrop-blur">
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
             <Brand />
             {session.doc && (
               <Button type="button" variant="ghost" onClick={() => session.setConfirmReset(true)}>
-                Nuevo archivo
+                New file
               </Button>
             )}
           </div>
         </header>
 
         <div className="mx-auto grid max-w-6xl gap-4 px-4 py-4">
-          <Callout tone="info" title="Todo ocurre en este navegador">
-            SASHecg no tiene servidor. El PDF, la contraseña y los datos del paciente no salen de este dispositivo. Al
-            cerrar o recargar la pestaña, se olvidan.
+          <Callout tone="info" title="Everything stays in this browser">
+            SASHecg has no server. The PDF, the password, and the patient details never leave this device. Closing or
+            reloading the tab forgets them.
           </Callout>
 
-          <Stepper value={stage} onValueChange={session.goTo} linear={false} aria-label="Pasos de anonimización">
-            <StepperStep title="Subir" description="Un PDF" />
-            <StepperStep title="Definir área" description="Esquina superior" disabled={session.maxStage < 1} />
-            <StepperStep title="Revisar" description="Miniaturas" disabled={session.maxStage < 2} />
-            <StepperStep title="Exportar" description="Un ZIP" disabled={session.maxStage < 3} />
+          <Stepper value={stage} onValueChange={session.goTo} linear={false} aria-label="Anonymization steps">
+            <StepperStep title="Upload" description="One PDF" />
+            <StepperStep title="Define area" description="Upper left" disabled={session.maxStage < 1} />
+            <StepperStep title="Review" description="Thumbnails" disabled={session.maxStage < 2} />
+            <StepperStep title="Export" description="One ZIP" disabled={session.maxStage < 3} />
           </Stepper>
 
           <main>
@@ -50,7 +50,7 @@ export default function App() {
         </div>
 
         <footer className="mx-auto max-w-6xl px-4 pb-8 text-[12px] text-fg-3">
-          SASHecg tapa solo el rectángulo que marques. No adivina otros datos que queden visibles en la hoja.
+          SASHecg covers only the rectangle you mark. It does not look for other details that remain visible on the page.
         </footer>
 
         <div className="sr-only" aria-live="polite">
@@ -60,17 +60,17 @@ export default function App() {
         <Dialog open={session.confirmReset} onOpenChange={session.setConfirmReset}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>¿Empezar con otro archivo?</DialogTitle>
+              <DialogTitle>Start with another file?</DialogTitle>
               <DialogDescription>
-                Se olvida el PDF, la contraseña y las áreas de esta pestaña. No se envía nada a un servidor.
+                This tab forgets the PDF, the password, and the areas. Nothing is sent to a server.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={() => session.setConfirmReset(false)}>
-                Cancelar
+                Cancel
               </Button>
               <Button type="button" variant="danger" onClick={() => void session.reset()}>
-                Nuevo archivo
+                New file
               </Button>
             </DialogFooter>
           </DialogContent>

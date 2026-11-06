@@ -12,7 +12,7 @@ const canvasFactory: CanvasFactory = (width, height) =>
 
 const RECT = { x: 0, y: 0, width: 0.45, height: 0.3 }
 
-test('100 páginas de entrada producen 100 PDF y desaparecen el texto y los píxeles del área', async () => {
+test('100 input pages yield 100 PDFs and the marked text and pixels are gone', async () => {
   const source = await makeBatch(100)
   const opened = await openPdf(source)
   expect(opened.pdf.numPages).toBe(100)
@@ -64,9 +64,9 @@ test('100 páginas de entrada producen 100 PDF y desaparecen el texto y los píx
     await page.render({ canvas: canvas as unknown as HTMLCanvasElement, viewport }).promise
     const masked = ctx.getImageData(20, 20, 1, 1).data
     const kept = ctx.getImageData(120, 160, 1, 1).data
-    expect([masked[0], masked[1], masked[2], masked[3]], `${name} máscara`).toEqual([17, 17, 17, 255])
-    expect(kept[2], `${name} trazado`).toBeGreaterThan(200)
-    expect(kept[0], `${name} trazado`).toBeLessThan(40)
+    expect([masked[0], masked[1], masked[2], masked[3]], `${name} mask`).toEqual([17, 17, 17, 255])
+    expect(kept[2], `${name} trace`).toBeGreaterThan(200)
+    expect(kept[0], `${name} trace`).toBeLessThan(40)
     page.cleanup()
     await out.destroy()
   }
@@ -74,7 +74,7 @@ test('100 páginas de entrada producen 100 PDF y desaparecen el texto y los píx
   await opened.destroy()
 }, 180000)
 
-test('tamaños mezclados y una rotación no recuperan el texto y respetan la página visual', async () => {
+test('mixed sizes and a rotation drop the text and keep the visual page', async () => {
   const doc = await PDFDocument.create()
   doc.setTitle('PHI-SECRETO-XYZ')
   doc.setAuthor('Dr Secreto')
@@ -112,7 +112,7 @@ test('tamaños mezclados y una rotación no recuperan el texto y respetan la pá
   ]
   for (let index = 0; index < result.pages.length; index++) {
     const bytes = result.pages[index]?.pdfBytes
-    if (!bytes) throw new Error('falta página')
+    if (!bytes) throw new Error('missing page')
     expect(new TextDecoder('latin1').decode(bytes).includes('PHI-SECRETO-XYZ')).toBe(false)
     const loaded = await PDFDocument.load(bytes)
     expect(loaded.getPageCount()).toBe(1)

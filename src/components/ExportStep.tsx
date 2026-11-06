@@ -15,10 +15,10 @@ export function ExportStep({ session }: { session: Session }) {
   return (
     <section className="grid max-w-2xl gap-4">
       <header className="grid gap-1">
-        <h1 className="text-xl font-medium tracking-[-0.03em]">Descarga el ZIP</h1>
+        <h1 className="text-xl font-medium tracking-[-0.03em]">Download the ZIP</h1>
         <p className="text-[13.5px] leading-relaxed text-fg-2">
-          Un PDF por página, con nombres estables: ecg-001.pdf, ecg-002.pdf y así. Cada archivo es una imagen plana.
-          Bajo la máscara no hay texto que recuperar.
+          One PDF per page, with stable names: ecg-001.pdf, ecg-002.pdf, and so on. Each file is a flat image. Nothing
+          under the mask can be recovered.
         </p>
       </header>
 
@@ -28,7 +28,7 @@ export function ExportStep({ session }: { session: Session }) {
           {filename}
         </div>
         <p className="text-[13px] text-fg-2">
-          {ready.length} de {doc.pageCount} páginas · cerca de {formatBytes(bytes)} antes de empaquetar
+          {ready.length} of {doc.pageCount} pages · about {formatBytes(bytes)} before packaging
         </p>
         <ul className="grid gap-0.5 text-[12px] tabular-nums text-fg-3">
           {ready.slice(0, 3).map((slot) => (
@@ -40,31 +40,30 @@ export function ExportStep({ session }: { session: Session }) {
       </div>
 
       {!session.readyToExport && (
-        <Callout tone="warning" title="Aún no se puede exportar">
+        <Callout tone="warning" title="Not ready to export">
           {session.stale
-            ? 'El área cambió después de procesar. Vuelve a generar las páginas.'
+            ? 'The area changed after processing. Generate the pages again.'
             : session.failures.length
-              ? 'Hay páginas con error. El ZIP no se crea hasta que el lote esté completo.'
-              : 'Faltan páginas por procesar.'}
+              ? 'Some pages failed. The ZIP is created only when the batch is complete.'
+              : 'Some pages still need processing.'}
         </Callout>
       )}
 
       {session.exportError && (
-        <Callout tone="danger" title="No se descargó">
+        <Callout tone="danger" title="Download failed">
           {session.exportError}
         </Callout>
       )}
 
       {session.exportName && (
-        <Callout tone="success" title="Listo">
-          Se descargó {session.exportName} en este dispositivo. El archivo original sigue solo en la memoria de esta
-          pestaña.
+        <Callout tone="success" title="Done">
+          {session.exportName} downloaded on this device. The original file remains only in this tab’s memory.
         </Callout>
       )}
 
-      <Callout tone="info" title="Privacidad">
-        El ZIP se arma en el navegador. SASHecg no lo sube a ningún sitio. Al recargar la página, el PDF y la
-        contraseña se olvidan.
+      <Callout tone="info" title="Privacy">
+        The ZIP is built in the browser. SASHecg does not upload it. Reloading the page forgets the PDF and the
+        password.
       </Callout>
 
       <div className="sticky bottom-0 z-10 -mx-4 border-t border-line bg-page/95 px-4 py-3 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0">
@@ -74,10 +73,10 @@ export function ExportStep({ session }: { session: Session }) {
           className="w-full sm:w-auto"
           disabled={!session.readyToExport || session.exporting}
           loading={session.exporting}
-          loadingText="Preparando el ZIP…"
+          loadingText="Preparing the ZIP…"
           onClick={() => void session.exportZip()}
         >
-          Descargar ZIP
+          Download ZIP
         </Button>
       </div>
     </section>

@@ -11,5 +11,5 @@ export function formatMillimeters(widthPt: number, heightPt: number): string {
 }
 
 export function formatDpi(dpi: number): string {
-  return `${Math.round(dpi)} ppp`
+  return `${Math.round(dpi)} dpi`
 }

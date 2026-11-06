@@ -128,9 +128,9 @@ export function useSession() {
   const targets = scope === 'all' ? [] : selection.length > 0 ? selection : [editorPage]
 
   const status = processing
-    ? `Procesando, ${progress?.done ?? 0} de ${progress?.total ?? 0} páginas.`
+    ? `Processing, ${progress?.done ?? 0} of ${progress?.total ?? 0} pages.`
     : exportName
-      ? `Se descargó ${exportName}.`
+      ? `Downloaded ${exportName}.`
       : fileError
 
   async function settleRunning() {
@@ -144,7 +144,7 @@ export function useSession() {
     const pages = await readPageInfos(opened.pdf)
     if (pages.length === 0) {
       await opened.destroy()
-      throw new PdfOpenError('invalid', 'El PDF no tiene páginas.')
+      throw new PdfOpenError('invalid', 'The PDF has no pages.')
     }
     await settleRunning()
     const previous = openedRef.current
@@ -190,7 +190,7 @@ export function useSession() {
 
   async function loadFile(file: File, passwordValue?: string) {
     if (!isPdf(file)) {
-      setFileError('Elige un archivo PDF.')
+      setFileError('Choose a PDF file.')
       setPasswordNeeded(false)
       return
     }
@@ -209,7 +209,7 @@ export function useSession() {
         setFileError(error.message)
         setPasswordNeeded(false)
       } else {
-        setFileError('No se pudo abrir el archivo.')
+        setFileError('Could not open the file.')
         setPasswordNeeded(false)
       }
     } finally {
@@ -232,7 +232,7 @@ export function useSession() {
       const file = new File([copy.buffer], 'ejemplo-sintetico.pdf', { type: 'application/pdf' })
       await replaceDocument(file)
     } catch {
-      setFileError('No se pudo crear el PDF de ejemplo.')
+      setFileError('Could not create the sample PDF.')
     } finally {
       setLoading(false)
     }
@@ -295,7 +295,7 @@ export function useSession() {
         onProgress: setProgress,
       })
       } catch {
-        setFileError('El proceso se detuvo por un error inesperado.')
+        setFileError('Processing stopped because of an unexpected error.')
         setHasRun(true)
         return
       }
@@ -346,7 +346,7 @@ export function useSession() {
         downloadBytes(zip, filename, 'application/zip')
         return filename
       } catch {
-        setExportError('No se pudo crear el ZIP. Vuelve a intentarlo.')
+        setExportError('Could not create the ZIP. Try again.')
         return null
       } finally {
         setExporting(false)

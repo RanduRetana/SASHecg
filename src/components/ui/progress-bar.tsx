@@ -84,7 +84,7 @@ export function ProgressBar({
     setShown(pct);
   }
 
-  const fill = error ? "bg-danger" : paused ? "bg-fg-3" : "bg-fg";
+  const fill = error ? "bg-danger" : paused ? "bg-fg-3" : "bg-[var(--tide)]";
   const suffix = error ? ", failed" : paused ? ", paused" : "";
 
   return (
